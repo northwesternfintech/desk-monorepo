@@ -1,0 +1,8 @@
+version: 3
+tasks:
+  install:
+    dir: ./
+    cmds:
+      - poetry lock --no-update
+      - poetry install
+      - poetry env use python3.12
