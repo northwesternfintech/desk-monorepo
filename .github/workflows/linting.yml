@@ -37,4 +37,26 @@ jobs:
 
     - name: Run mypy
       run: poetry run mypy .
+  unit-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+  
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+  
+      - name: Install project dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pipx install poetry
+  
+      - name: Install poetry dependencies
+        run: task install
+
+      - name: Running unit tests
+        run: poetry run pytest
 
