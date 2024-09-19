@@ -13,3 +13,8 @@ tasks:
     cmds:
       - poetry run ruff format 
       - poetry run ruff check --fix
+
+  unit:
+    dir: ./
+    cmds:
+      - poetry run pytest desk-monorepo/py/test
