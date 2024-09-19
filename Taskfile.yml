@@ -6,3 +6,10 @@ tasks:
       - poetry lock --no-update
       - poetry install
       - poetry env use python3.12
+
+
+  format:
+    dir: ./
+    cmds:
+      - poetry run ruff format 
+      - poetry run ruff check --fix
