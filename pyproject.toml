@@ -5,7 +5,7 @@ description = ""
 authors = ["Ethan Havemann <echavemann@gmail.com>"]
 readme = "README.md"
 packages = [
-  {include = "src/py"}
+  {include = "pysrc", from = "src"}
 ]
 
 [tool.poetry.dependencies]
