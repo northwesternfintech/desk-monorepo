@@ -15,7 +15,7 @@ class Action:
     ):
         self.instrument = instrument
         self.side = side
-        self.liquidity_type = type
+        self.liquidity_type = liquidity_type
         self.quantity = quantity
         self.price: Optional[float] = price
         if self.liquidity_type == LiquidityType.MAKER:
