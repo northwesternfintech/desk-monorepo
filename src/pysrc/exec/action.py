@@ -9,7 +9,7 @@ class Action:
         self,
         instrument: Instrument,
         side: OrderSide,
-        type: LiquidityType,
+        liquidity_type: LiquidityType,
         quantity: float,
         price: Optional[float],
     ):
@@ -18,5 +18,5 @@ class Action:
         self.liquidity_type = type
         self.quantity = quantity
         self.price: Optional[float] = price
-        if type == LiquidityType.MAKER:
+        if self.liquidity_type == LiquidityType.MAKER:
             assert self.price is not None
