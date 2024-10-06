@@ -1,7 +1,7 @@
-from pysrc.util.types import Market, OrderSide, LiquidityType
+from pysrc.util.types import Market
+
 
 class Instrument:
-
     def __init__(self, market: Market, feedcode: str):
         self.market = market
         self.feedcode = feedcode
@@ -11,5 +11,3 @@ class Instrument:
 
     def get_feedcode(self) -> str:
         return self.feedcode
-
-
