@@ -3,8 +3,9 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from pysrc.util.slack_utils import get_slack_id_by_name
 import os
+SPECIAL_MENTIONS = ("here", "everyone", "channel")
 
-_client: Optional[WebClient] = None  # Cache the client instance
+_client: Optional[WebClient] = None
 
 def get_client() -> WebClient:
     global _client
@@ -31,7 +32,7 @@ def send_slack_message(channel: str, message: str, mentions: list[str] = []) -> 
     client = get_client()
     result_message = ""
     for mention in mentions:
-        mention_id = get_slack_id_by_name(client, mention) if mention not in ["here", "everyone", "channel"] else mention 
+        mention_id = get_slack_id_by_name(client, mention) if mention not in SPECIAL_MENTIONS  else mention 
         if not mention_id:
             raise AssertionError("ID cannot be None")
         result_message+=_format_mention(mention_id)
