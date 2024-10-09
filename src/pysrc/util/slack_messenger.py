@@ -17,6 +17,6 @@ def send_slack_message(channel: str, message: str):
     except SlackApiError as e:
         print(f"Error sending message: {e.response['error']}")
 
-test_message = format_mention("U03RN07KZHT") + " likes dick"
+test_message = format_mention("U03RN07KZHT") + " likes apples!"
 if __name__ == "__main__":
     send_slack_message(channel='#bot-test', message=test_message)
