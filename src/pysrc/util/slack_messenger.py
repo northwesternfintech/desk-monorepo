@@ -1,15 +1,19 @@
+from typing import Optional
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from pysrc.util.slack_utils import get_slack_id_by_name
 import os
 
+_client: Optional[WebClient] = None  # Cache the client instance
+
 def get_client() -> WebClient:
-    desk_bot_token = os.getenv('DESK_BOT_TOKEN')
-
-    if not desk_bot_token:
-        raise EnvironmentError("The environment variable 'DESK_BOT_TOKEN' is not set. Please set it before running the script.")
-
-    return  WebClient(token=desk_bot_token)
+    global _client
+    if _client is None:
+        desk_bot_token = os.getenv('DESK_BOT_TOKEN')
+        if not desk_bot_token:
+            raise EnvironmentError("The environment variable 'DESK_BOT_TOKEN' is not set. Please set it before running the script.")
+        _client = WebClient(token=desk_bot_token)
+    return _client
 
 def _format_mention(id: str) -> str:
     if not id:
@@ -24,6 +28,7 @@ def _format_mention(id: str) -> str:
     return f"<#{id}>"  # Mention channel
 
 def send_slack_message(channel: str, message: str, mentions: list[str] = []) -> None:
+    client = get_client()
     result_message = ""
     for mention in mentions:
         mention_id = get_slack_id_by_name(client, mention) if mention not in ["here", "everyone", "channel"] else mention 
