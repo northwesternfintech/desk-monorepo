@@ -1,6 +1,6 @@
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
-from .slack_utils import get_slack_id_by_name
+from pysrc.util.slack_utils import get_slack_id_by_name
 import os
 
 desk_bot_token = os.getenv('DESK_BOT_TOKEN')
@@ -26,6 +26,8 @@ def send_slack_message(channel: str, message: str, mentions: list[str] = []) -> 
     result_message = ""
     for mention in mentions:
         mention_id = get_slack_id_by_name(client, mention) if mention not in ["here", "everyone", "channel"] else mention 
+        if not mention_id:
+            raise AssertionError("ID cannot be None")
         result_message+=_format_mention(mention_id)
     result_message+=message
     try:
