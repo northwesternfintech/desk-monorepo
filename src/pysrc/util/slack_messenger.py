@@ -1,6 +1,6 @@
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
-from slack_utils import get_slack_id_by_name
+#from slack_utils import get_slack_id_by_name
 import os
 
 #currently designed to work for DeskBot only
@@ -13,7 +13,7 @@ client = WebClient(token=desk_bot_token)
 
 def format_mention(id: str):
     if id in ["channel", "here", "everyone"]:
-        return f"@{id}"
+        return f"<!{id}>"
     
     assert(id[0] == "U" or id[0] == "C")
     if id[0] == "U":

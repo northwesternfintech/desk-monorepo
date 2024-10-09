@@ -1,4 +1,3 @@
-from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 def get_slack_id_by_name(client, name, search_type="user"):
