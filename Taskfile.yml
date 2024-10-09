@@ -7,6 +7,12 @@ tasks:
       - poetry install
       - poetry env use python3.12
 
+  test:
+    dir: ./
+    cmds:
+      - task lint
+      - task unit
+
 
   lint:
     dir: ./
