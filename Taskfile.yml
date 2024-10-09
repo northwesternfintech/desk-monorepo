@@ -8,6 +8,12 @@ tasks:
       - poetry env use python3.12
 
 
+  lint:
+    dir: ./
+    cmds:
+      - poetry run mypy .
+      - poetry run ruff check .
+
   format:
     dir: ./
     cmds:
