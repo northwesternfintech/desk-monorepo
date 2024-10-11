@@ -32,10 +32,7 @@ jobs:
     - name: Install poetry dependencies
       run: task install
 
-    - name: Run ruff
-      run: poetry run ruff check .
-
-    - name: Run mypy
-      run: poetry run mypy .
+    - name: Run ruff and mypy
+      run: task lint
 
 

@@ -13,6 +13,18 @@ tasks:
       - task lint
       - task unit
 
+  ci:
+    dir: ./
+    cmds:
+      - echo ""
+      - task test
+      # - task integrate
+
+  benchmark_ci:
+    dir: ./
+    cmds:
+      - hyperfine 'task ci'
+
 
   lint:
     dir: ./
