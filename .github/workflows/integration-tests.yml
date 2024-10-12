@@ -1,4 +1,4 @@
-name: CI - unit-tests
+name: CI - integration-tests
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  unit-tests:
+  integration-tests:
     runs-on: ubuntu-latest
   
     steps:
@@ -32,5 +32,5 @@ jobs:
     - name: Install poetry dependencies
       run: task install
     
-    - name: Run unit tests
-      run: poetry run pytest src/pysrc/test/unit
+    - name: Run integration tests
+      run: poetry run pytest src/pysrc/test/integration

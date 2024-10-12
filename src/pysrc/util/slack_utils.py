@@ -4,25 +4,27 @@ from slack_sdk import WebClient
 
 _users: Optional[list[dict]] = None
 
+
 def _get_users(client: WebClient) -> Optional[list[dict]]:
     global _users
     if _users is None:
         _users = client.users_list().get("members", [])
     return _users
 
+
 def get_user_if_valid(client: WebClient, name: str) -> Optional[dict]:
     users = _get_users(client)
     if not users:
-        print("Could not retreieve list of slack users (is the WebClient working properly?)")
+        print(
+            "Could not retreieve list of slack users (is the WebClient working properly?)"
+        )
         return None
     for user in users:
         profile = user.get("profile", {})
-        if (
-            profile.get("display_name") == name
-            or profile.get("real_name") == name
-        ):
+        if profile.get("display_name") == name or profile.get("real_name") == name:
             return user
     return None
+
 
 def get_slack_id_by_name(
     client: WebClient, name: str, search_type: str = "user"

@@ -53,6 +53,7 @@ def send_slack_message(channel: str, message: str, mentions: list[str] = []) -> 
     except SlackApiError as e:
         print(f"Error sending message: {e.response['error']}")
 
+
 def does_slack_user_exist(name: str) -> bool:
     client = _get_client()
     return get_user_if_valid(client, name) is not None

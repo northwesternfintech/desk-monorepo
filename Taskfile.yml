@@ -29,4 +29,9 @@ tasks:
   unit:
     dir: ./
     cmds:
-      - poetry run pytest src/pysrc/test
+      - poetry run pytest src/pysrc/test/unit
+
+  integration:
+    dir: ./
+    cmds:
+      - poetry run pytest src/pysrc/test/integration
