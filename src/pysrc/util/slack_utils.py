@@ -4,14 +4,14 @@ from slack_sdk import WebClient
 
 _users: Optional[list[dict]] = None
 
-def get_users(client: WebClient) -> Optional[list[dict]]:
+def _get_users(client: WebClient) -> Optional[list[dict]]:
     global _users
     if _users is None:
         _users = client.users_list().get("members", [])
     return _users
 
 def get_user_if_valid(client: WebClient, name: str) -> Optional[dict]:
-    users = get_users(client)
+    users = _get_users(client)
     if not users:
         print("Could not retreieve list of slack users (is the WebClient working properly?)")
         return None
