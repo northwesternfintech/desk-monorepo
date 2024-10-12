@@ -1,7 +1,7 @@
 from typing import Optional
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
-from pysrc.util.slack_utils import get_slack_id_by_name
+from pysrc.util.slack_utils import get_slack_id_by_name, get_user_if_valid
 import os
 
 SPECIAL_MENTIONS = ("here", "everyone", "channel")
@@ -9,7 +9,7 @@ SPECIAL_MENTIONS = ("here", "everyone", "channel")
 _client: Optional[WebClient] = None
 
 
-def get_client() -> WebClient:
+def _get_client() -> WebClient:
     global _client
     if _client is None:
         desk_bot_token = os.getenv("DESK_BOT_TOKEN")
@@ -35,7 +35,7 @@ def _format_mention(id: str) -> str:
 
 
 def send_slack_message(channel: str, message: str, mentions: list[str] = []) -> None:
-    client = get_client()
+    client = _get_client()
     result_message = ""
     for mention in mentions:
         mention_id = (
@@ -52,3 +52,7 @@ def send_slack_message(channel: str, message: str, mentions: list[str] = []) -> 
         print(f"Message sent to {channel}: {response['ts']}")
     except SlackApiError as e:
         print(f"Error sending message: {e.response['error']}")
+
+def does_slack_user_exist(name: str) -> bool:
+    client = _get_client()
+    return get_user_if_valid(client, name) is not None
