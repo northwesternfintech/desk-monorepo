@@ -34,4 +34,3 @@ jobs:
 
     - name: Run ruff and mypy
       run: task lint
-

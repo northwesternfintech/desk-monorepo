@@ -13,6 +13,11 @@ tasks:
       - task lint
       - task unit
 
+  ci:
+    dir: ./
+    cmds:
+      - task test
+
 
   lint:
     dir: ./
