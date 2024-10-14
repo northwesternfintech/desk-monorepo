@@ -18,11 +18,6 @@ tasks:
     cmds:
       - task test
 
-  benchmark_ci:
-    dir: ./
-    cmds:
-      - hyperfine 'task ci'
-
 
   lint:
     dir: ./
