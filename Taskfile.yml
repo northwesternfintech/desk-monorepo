@@ -16,9 +16,7 @@ tasks:
   ci:
     dir: ./
     cmds:
-      - echo ""
       - task test
-      # - task integrate
 
   benchmark_ci:
     dir: ./
