@@ -1,4 +1,4 @@
-name: CI - Unit Tests
+name: CI - Integration Tests
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  unit-tests:
+  integration-tests:
     runs-on: ubuntu-latest
   
     steps:
@@ -32,5 +32,7 @@ jobs:
     - name: Install poetry dependencies
       run: task install
     
-    - name: Run unit tests
-      run: task unit
+    - name: Run integration tests
+      env:
+          DESK_BOT_TOKEN: ${{ secrets.DESK_BOT_TOKEN }}
+      run: task integration
