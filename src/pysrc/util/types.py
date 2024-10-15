@@ -13,7 +13,7 @@ class OrderSide(Enum):
 
 class Market(Enum):
     KRAKEN_SPOT = 0
-    KRAKEN_USDT_FUTURE = 1
+    KRAKEN_USD_FUTURE = 1
 
 
 class Asset(Enum):
