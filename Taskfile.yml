@@ -12,12 +12,12 @@ tasks:
     cmds:
       - task lint
       - task unit
-      - task integration
 
   ci:
     dir: ./
     cmds:
       - task test
+      - task integration
 
 
   lint:
