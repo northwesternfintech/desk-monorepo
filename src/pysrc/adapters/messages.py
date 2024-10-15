@@ -5,8 +5,8 @@ class SnapshotMessage:
     def __init__(self, time: int, feedcode: str, bids: list[list[str]], asks: list[list[str]], market: Market):
         self.time = time
         self.feedcode = feedcode
-        self.bids = []
-        self.asks = []
+        self.bids: list[tuple[float]] = []
+        self.asks: list[tuple[float]] = []
         for price, volume in bids:
             volume = float(volume)
             if volume != 0.0:
@@ -17,10 +17,10 @@ class SnapshotMessage:
             if volume != 0.0:
                 self.asks.append(float(price), volume)
 
-    def get_bids(self):
+    def get_bids(self) -> list[tuple[float]]:
         return self.bids
 
-    def get_asks(self):
+    def get_asks(self) -> list[tuple[float]]:
         return self.asks
 
 
