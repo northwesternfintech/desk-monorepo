@@ -1,4 +1,5 @@
 from pysrc.adapters.messages import SnapshotMessage, TradeMessage
+from pysrc.util.types import Asset
 
 
 class BaseFeatureGenerator:
@@ -8,6 +9,6 @@ class BaseFeatureGenerator:
 
     def on_tick(
         self, snapshots: dict[str, SnapshotMessage], trades: dict[str, TradeMessage]
-    ) -> list[float]:
+    ) -> dict[Asset, list[float]]:
         # compute all features. BE CERTAIN that the output order matches the order of your trained model.
         raise NotImplementedError
