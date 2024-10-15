@@ -33,4 +33,6 @@ jobs:
       run: task install
     
     - name: Run integration tests
+      env:
+          DESK_BOT_TOKEN: ${{ secrets.DESK_BOT_TOKEN }}
       run: task integration
