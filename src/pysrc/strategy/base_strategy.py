@@ -4,7 +4,7 @@ from pysrc.util.types import Asset
 
 
 class BaseStrategy(ABC):
-    def __init__(self):
+    def __init__(self) -> None:
         # put any needed state here!
         raise NotImplementedError
 

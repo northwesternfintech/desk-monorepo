@@ -2,7 +2,7 @@ from pysrc.adapters.messages import SnapshotMessage, TradeMessage
 
 
 class BaseFeatureGenerator:
-    def __init__(self):
+    def __init__(self) -> None:
         # put any state that you need here.
         raise NotImplementedError
 

@@ -1,13 +1,13 @@
-from pysrc.util.types import Market
+from pysrc.util.types import Market, Asset
 
 
 class Instrument:
-    def __init__(self, market: Market, feedcode: str):
+    def __init__(self, market: Market, asset: Asset):
         self.market = market
-        self.feedcode = feedcode
+        self.asset = asset
 
     def get_market(self) -> Market:
         return self.market
 
-    def get_feedcode(self) -> str:
-        return self.feedcode
+    def get_asset(self) -> Asset:
+        return self.asset
