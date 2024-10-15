@@ -1,4 +1,4 @@
-name: CI - unit-tests
+name: CI - Unit Tests
 
 on:
   push:
