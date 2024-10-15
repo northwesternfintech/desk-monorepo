@@ -14,3 +14,17 @@ class OrderSide(Enum):
 class Market(Enum):
     KRAKEN_SPOT = 0
     KRAKEN_USDT_FUTURE = 1
+
+
+class Asset(Enum):
+    BTC = 0
+    ETH = 1
+    WIF = 2
+    XRP = 3
+    SOL = 4
+    DOGE = 5
+    TRX = 6
+    ADA = 7
+    AVAX = 8
+    SHIB = 9
+    DOT = 10
