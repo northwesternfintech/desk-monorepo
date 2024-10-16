@@ -19,6 +19,7 @@ class WebSocketClient(ABC):
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._thread: Optional[threading.Thread] = None
         self._executor: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=1)
+        self.received_messages: list[str] = []
 
     def connect(self) -> None:
         self._thread = threading.Thread(target=self._run_event_loop)
@@ -37,7 +38,7 @@ class WebSocketClient(ABC):
                     await self._listen()
             except Exception as e:
                 logger.error(f"Connection error: {e}")
-                await self.on_error(e)
+                self.on_error(e)
 
             if not self._stop_event.is_set():
                 logger.info(f"Reconnecting in {self.reconnect_interval} seconds...")
@@ -46,7 +47,13 @@ class WebSocketClient(ABC):
     async def _listen(self) -> None:
         try:
             while not self._stop_event.is_set():
-                message = await self.websocket.recv()
+                if self.websocket:
+                    message = await self.websocket.recv()
+                else:
+                    raise RuntimeError("WebSocket is not connected")
+
+                if isinstance(message, bytes):
+                    message = message.decode("utf-8")
                 self.on_message(message)
         except websockets.exceptions.ConnectionClosed:
             logger.info("WebSocket connection closed")
@@ -60,6 +67,7 @@ class WebSocketClient(ABC):
     @abstractmethod
     def on_message(self, message: str) -> None:
         logger.info(f"Received message: {message}")
+        self.received_messages.append(message)
 
     def on_close(self) -> None:
         logger.info("WebSocket closed")
