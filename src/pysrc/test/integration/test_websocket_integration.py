@@ -2,8 +2,8 @@ import pytest
 import asyncio
 import websockets
 import threading
-from typing import Optional, Generator, Any
-from pysrc.util.websocket_handler import WebSocketClient
+from typing import Optional, Generator, Any, override
+from pysrc.util.base_websocket_client import BaseWebSocketClient
 
 
 class EchoServer:
@@ -47,30 +47,30 @@ class TestWebSocketClientIntegration:
         thread.join()
 
     @pytest.fixture
-    def websocket_client(self) -> WebSocketClient:
-        class TestWebSocketClient(WebSocketClient):
+    def websocket_client(self) -> BaseWebSocketClient:
+        class TestWebSocketClient(BaseWebSocketClient):
+            @override
             def __init__(self, url: str):
                 super().__init__(url)
                 self.received_messages = []
 
-            def on_message(self, message: str) -> None:
+            @override
+            def on_message(self, message: str | bytes) -> None:
+                if isinstance(message, bytes):
+                    message = message.decode("utf-8")
                 self.received_messages.append(message)
 
         return TestWebSocketClient("ws://localhost:8765")
 
-    def test_websocket_client_integration(self, echo_server: EchoServer, websocket_client: Any) -> None:
+    def test_websocket_client_integration(self, echo_server: EchoServer, websocket_client: BaseWebSocketClient) -> None:
         websocket_client.connect()
 
-        # Wait for the connection to be established
         asyncio.get_event_loop().run_until_complete(asyncio.sleep(1))
 
-        # Send a message
         websocket_client.send_message("Hello, WebSocket!")
 
-        # Wait for the response
         asyncio.get_event_loop().run_until_complete(asyncio.sleep(1))
 
-        # Check if the message was echoed back
         assert websocket_client.received_messages == ["Echo: Hello, WebSocket!"]
 
         websocket_client.close()

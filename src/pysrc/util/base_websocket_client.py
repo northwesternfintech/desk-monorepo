@@ -4,13 +4,12 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Optional
 import threading
-from concurrent.futures import ThreadPoolExecutor
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class WebSocketClient(ABC):
+class BaseWebSocketClient(ABC):
     def __init__(self, url: str, reconnect_interval: int = 5):
         self.url: str = url
         self.websocket: Optional[websockets.WebSocketClientProtocol] = None
@@ -18,8 +17,8 @@ class WebSocketClient(ABC):
         self._stop_event: threading.Event = threading.Event()
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._thread: Optional[threading.Thread] = None
-        self._executor: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=1)
         self.received_messages: list[str] = []
+        self._connected: bool = False
 
     def connect(self) -> None:
         self._thread = threading.Thread(target=self._run_event_loop)
@@ -31,57 +30,53 @@ class WebSocketClient(ABC):
         self._loop.run_until_complete(self._connect_and_listen())
 
     async def _connect_and_listen(self) -> None:
-        while not self._stop_event.is_set():
-            try:
-                async with websockets.connect(self.url) as self.websocket:
-                    logger.info(f"Connected to WebSocket at {self.url}")
-                    await self._listen()
-            except Exception as e:
-                logger.error(f"Connection error: {e}")
-                self.on_error(e)
-
-            if not self._stop_event.is_set():
-                logger.info(f"Reconnecting in {self.reconnect_interval} seconds...")
-                await asyncio.sleep(self.reconnect_interval)
+        try:
+            self.websocket = await websockets.connect(self.url)
+            logger.info(f"Connected to WebSocket at {self.url}")
+            self._connected = True
+            await self._listen() 
+        except Exception as e:
+            logger.error(f"Connection error: {e}")
+            self._connected = False
+            self.on_connection_error(e)  # connection-specific error
 
     async def _listen(self) -> None:
         try:
             while not self._stop_event.is_set():
                 if self.websocket:
                     message = await self.websocket.recv()
-                else:
-                    raise RuntimeError("WebSocket is not connected")
-
-                if isinstance(message, bytes):
-                    message = message.decode("utf-8")
-                self.on_message(message)
+                    self.on_message(message)
         except websockets.exceptions.ConnectionClosed:
             logger.info("WebSocket connection closed")
             self.on_close()
-            # reconnect
-            self.connect()
         except Exception as e:
             logger.error(f"Error while listening: {e}")
-            self.on_error(e)
+            self.on_listen_error(e)  # listening-specific error
 
     @abstractmethod
-    def on_message(self, message: str) -> None:
+    def on_message(self, message: str | bytes) -> None:
+        if isinstance(message, bytes):
+            message = message.decode("utf-8")
         logger.info(f"Received message: {message}")
         self.received_messages.append(message)
 
     def on_close(self) -> None:
         logger.info("WebSocket closed")
 
-    def on_error(self, error: Exception) -> None:
-        logger.error(f"WebSocket error: {error}")
+    def on_connection_error(self, error: Exception) -> None:
+        """Handle connection-specific errors."""
+        logger.error(f"WebSocket connection error: {error}")
+
+
+    def on_listen_error(self, error: Exception) -> None:
+        """Handle listening-specific errors."""
+        logger.error(f"WebSocket listening error: {error}")
 
     def send_message(self, message: str) -> None:
-        if self._loop is None:
+        if not self._connected or not self._loop:
             raise RuntimeError("WebSocket is not connected. Call connect() first.")
-        future = asyncio.run_coroutine_threadsafe(
-            self._send_message(message), self._loop
-        )
-        future.result()  # This will block until the message is sent
+        future = asyncio.run_coroutine_threadsafe(self._send_message(message), self._loop)
+        future.result()
 
     async def _send_message(self, message: str) -> None:
         if self.websocket:
@@ -96,5 +91,5 @@ class WebSocketClient(ABC):
             self._loop.call_soon_threadsafe(self._loop.stop)
         if self._thread:
             self._thread.join()
-        self._executor.shutdown(wait=True)
         logger.info("WebSocket connection closed")
+
