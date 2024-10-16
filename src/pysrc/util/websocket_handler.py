@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class WebSocketClient(ABC):
     def __init__(self, url: str, reconnect_interval: int = 5):
         self.url: str = url
@@ -37,7 +38,7 @@ class WebSocketClient(ABC):
             except Exception as e:
                 logger.error(f"Connection error: {e}")
                 await self.on_error(e)
-            
+
             if not self._stop_event.is_set():
                 logger.info(f"Reconnecting in {self.reconnect_interval} seconds...")
                 await asyncio.sleep(self.reconnect_interval)
@@ -69,7 +70,9 @@ class WebSocketClient(ABC):
     def send_message(self, message: str) -> None:
         if self._loop is None:
             raise RuntimeError("WebSocket is not connected. Call connect() first.")
-        future = asyncio.run_coroutine_threadsafe(self._send_message(message), self._loop)
+        future = asyncio.run_coroutine_threadsafe(
+            self._send_message(message), self._loop
+        )
         future.result()  # This will block until the message is sent
 
     async def _send_message(self, message: str) -> None:
