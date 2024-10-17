@@ -13,7 +13,7 @@ class TestWebSocketClient:
 
         return MockWebSocketClient(url="ws://example.com")
 
-    @patch("websockets.connect", new_callable = AsyncMock)
+    @patch("websockets.connect", new_callable=AsyncMock)
     async def test_send_message(self, mock_connect: Any, websocket_client: BaseWebSocketClient) -> None:
         mock_ws = AsyncMock()
         mock_connect.return_value = mock_ws
