@@ -28,3 +28,8 @@ class Asset(Enum):
     AVAX = 9
     SHIB = 10
     DOT = 11
+
+class Server(Enum):
+    BLACK = 1
+    SCHOLES = 2
+    FOREIGN = 3
