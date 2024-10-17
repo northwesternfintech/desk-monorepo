@@ -36,14 +36,16 @@ class TradeMessage:
         self,
         time: int,
         feedcode: str,
-        quantity: int,
         n_trades: int,
+        price: float,
+        quantity: float,
         side: OrderSide,
         market: Market,
     ):
         self.time = time
         self.feecode = feedcode
-        self.quantity = quantity
         self.n_trades = n_trades
+        self.quantity = quantity
+        self.price = price
         self.side = side
         self.market = market
