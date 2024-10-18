@@ -45,6 +45,7 @@ class Order:
     ):
         pass
 
+
 class PriceUnit(Enum):
     QUOTE_CURRENCY = 0
     PERCENT = 1
@@ -74,4 +75,8 @@ class OpenPosition:
             fill_time: str,
             size: float
     ):
-        pass
+        self.position_side = position_side
+        self.symbol = symbol
+        self.price = price
+        self.fill_time = fill_time
+        self.size = size
