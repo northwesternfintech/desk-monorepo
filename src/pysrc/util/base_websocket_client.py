@@ -66,6 +66,9 @@ class BaseWebSocketClient(ABC):
     def on_connection_error(self, error: Exception) -> None:
         """Handle connection-specific errors."""
         logger.error(f"WebSocket connection error: {error}")
+        # reconnect logic
+        if self._loop:
+            self._loop.call_later(self.reconnect_interval, self.connect)
 
 
     def on_listen_error(self, error: Exception) -> None:
