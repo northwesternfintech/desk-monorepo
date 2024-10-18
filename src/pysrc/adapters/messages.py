@@ -43,9 +43,22 @@ class TradeMessage:
         market: Market,
     ):
         self.time = time
-        self.feecode = feedcode
+        self.feedcode = feedcode
         self.n_trades = n_trades
         self.quantity = quantity
         self.price = price
         self.side = side
         self.market = market
+
+class SpreadMessage:
+    def __init__(
+        self,
+        time: int,
+        feedcode: str,
+        bid: float,
+        ask: float,
+    ):
+        self.time = time
+        self.feedcode = feedcode
+        self.bid = bid
+        self.ask = ask
