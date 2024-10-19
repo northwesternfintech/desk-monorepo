@@ -10,6 +10,7 @@ class SystemStatus(Enum):
     CANCEL_ONLY = 3
     POST_ONLY = 4
 
+
 @dataclass
 class SystemStatusResponse:
     status: SystemStatus
@@ -67,6 +68,7 @@ class OHLCData:
     asset: Asset
     ticks: list[OHLCTick]
     last: Optional[int]
+
 
 class SpreadMessage:
     def __init__(

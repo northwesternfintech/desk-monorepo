@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from pysrc.adapters.kraken.spot.kraken_client import KrakenClient
 from pysrc.util.types import Asset
 from pysrc.adapters.kraken.spot.containers import (
@@ -15,22 +15,25 @@ from pysrc.adapters.messages import SnapshotMessage, TradeMessage
 from pysrc.util.types import Market, OrderSide
 from pysrc.util.conversions import string_to_enum
 
+
 @pytest.fixture
-def client():
+def client() -> KrakenClient:
     return KrakenClient()
 
-@patch.object(KrakenClient, '_get')
-def test_get_system_status(mock_get, client):
+
+@patch.object(KrakenClient, "_get")
+def test_get_system_status(mock_get: MagicMock, client: KrakenClient) -> None:
     mock_get.return_value = {
         "error": [],
-        "result": {"status": "online", "timestamp": "2024-10-18T21:45:34Z"}
+        "result": {"status": "online", "timestamp": "2024-10-18T21:45:34Z"},
     }
 
     result = client.get_system_status()
     assert result == SystemStatus.ONLINE
 
-@patch.object(KrakenClient, '_get')
-def test_get_asset_info(mock_get, client):
+
+@patch.object(KrakenClient, "_get")
+def test_get_asset_info(mock_get: MagicMock, client: KrakenClient) -> None:
     mock_get.return_value = {
         "error": [],
         "result": {
@@ -39,9 +42,9 @@ def test_get_asset_info(mock_get, client):
                 "aclass": "currency",
                 "decimals": 8,
                 "collateral_value": 1000.0,
-                "status": "enabled"
+                "status": "enabled",
             }
-        }
+        },
     }
 
     result = client.get_asset_info(Asset.BTC)
@@ -52,16 +55,17 @@ def test_get_asset_info(mock_get, client):
     assert result.collateral_value == 1000.0
     assert result.status == AssetStatus.ENABLED
 
-@patch.object(KrakenClient, '_get')
-def test_get_order_book(mock_get, client):
+
+@patch.object(KrakenClient, "_get")
+def test_get_order_book(mock_get: MagicMock, client: KrakenClient) -> None:
     mock_get.return_value = {
         "error": [],
         "result": {
             "XXBTZUSD": {
                 "bids": [["50000.0", "0.5", "1633036800"]],
-                "asks": [["50500.0", "0.3", "1633036800"]]
+                "asks": [["50500.0", "0.3", "1633036800"]],
             }
-        }
+        },
     }
 
     result = client.get_order_book(Asset.BTC)
@@ -70,16 +74,26 @@ def test_get_order_book(mock_get, client):
     assert result.asks == [(50500.0, 0.3)]
     assert result.market == Market.KRAKEN_SPOT
 
-@patch.object(KrakenClient, '_get')
-def test_get_ohlc_data(mock_get, client):
+
+@patch.object(KrakenClient, "_get")
+def test_get_ohlc_data(mock_get: MagicMock, client: KrakenClient) -> None:
     mock_get.return_value = {
         "error": [],
         "result": {
             "XXBTZUSD": [
-                [1633036800, "48000.0", "49000.0", "47000.0", "48500.0", "48250.0", "100.0", 10]
+                [
+                    1633036800,
+                    "48000.0",
+                    "49000.0",
+                    "47000.0",
+                    "48500.0",
+                    "48250.0",
+                    "100.0",
+                    10,
+                ]
             ],
-            "last": 1633036800
-        }
+            "last": 1633036800,
+        },
     }
 
     result = client.get_ohlc_data(Asset.BTC)
@@ -93,15 +107,12 @@ def test_get_ohlc_data(mock_get, client):
     assert tick.low == "47000.0"
     assert tick.close == "48500.0"
 
-@patch.object(KrakenClient, '_get')
-def test_get_recent_trades(mock_get, client):
+
+@patch.object(KrakenClient, "_get")
+def test_get_recent_trades(mock_get: MagicMock, client: KrakenClient) -> None:
     mock_get.return_value = {
         "error": [],
-        "result": {
-            "XXBTZUSD": [
-                ["50000.0", "0.5", "1633036800", "b", "m", "12345"]
-            ]
-        }
+        "result": {"XXBTZUSD": [["50000.0", "0.5", "1633036800", "b", "m", "12345"]]},
     }
 
     result = client.get_recent_trades(Asset.BTC)
@@ -112,15 +123,12 @@ def test_get_recent_trades(mock_get, client):
     assert trade.side == OrderSide.BID
     assert trade.market == Market.KRAKEN_SPOT
 
-@patch.object(KrakenClient, '_get')
-def test_get_recent_spreads(mock_get, client):
+
+@patch.object(KrakenClient, "_get")
+def test_get_recent_spreads(mock_get: MagicMock, client: KrakenClient) -> None:
     mock_get.return_value = {
         "error": [],
-        "result": {
-            "XXBTZUSD": [
-                ["1633036800", "50000.0", "50500.0"]
-            ]
-        }
+        "result": {"XXBTZUSD": [["1633036800", "50000.0", "50500.0"]]},
     }
 
     result = client.get_recent_spreads(Asset.BTC)
