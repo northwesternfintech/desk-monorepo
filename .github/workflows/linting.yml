@@ -23,6 +23,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pipx install poetry
+        pip install requests
 
     - name: Install Task
       uses: arduino/setup-task@v2
