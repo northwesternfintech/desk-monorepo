@@ -15,6 +15,7 @@ ruff = "^0.6.5"
 pytest = "^8.3.3"
 slack-sdk = "^3.33.1"
 requests = "^2.28.0"
+types-requests = "^2.28.0" 
 
 [build-system]
 requires = ["poetry-core"]
