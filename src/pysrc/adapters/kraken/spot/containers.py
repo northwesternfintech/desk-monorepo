@@ -15,34 +15,40 @@ class SystemStatusResponse:
     status: SystemStatus
     timestamp: str
 
+
 class AssetStatus(Enum):
     ENABLED = 1
     DEPOSIT_ONLY = 2
     WITHDRAWAL_ONLY = 3
     FUNDING_TEMPORARILY_DISABLED = 4
 
+
 @dataclass
 class AssetInfo:
-    asset: Asset  
+    asset: Asset
     asset_name: str
     altname: str
     decimals: int
-    collateral_value: Optional[float]  
+    collateral_value: Optional[float]
     status: AssetStatus
+
 
 @dataclass
 class AssetPairInfo:
     altname: str
-    wsname: Optional[str]  
+    wsname: Optional[str]
     aclass_base: str
     base: str
     aclass_quote: str
     quote: str
 
-@dataclass
-class AssetPair:
-    asset1: Asset
-    asset2: Asset
+
+class TradeableAssetPairParam(Enum):
+    INFO = 1
+    LEVERAGE = 2
+    FEES = 3
+    MARGIN = 4
+
 
 @dataclass
 class OHLCTick:
@@ -55,8 +61,22 @@ class OHLCTick:
     volume: str
     count: int
 
+
 @dataclass
 class OHLCData:
     asset: Asset
     ticks: list[OHLCTick]
     last: Optional[int]
+
+class SpreadMessage:
+    def __init__(
+        self,
+        time: int,
+        feedcode: str,
+        bid: float,
+        ask: float,
+    ):
+        self.time = time
+        self.feedcode = feedcode
+        self.bid = bid
+        self.ask = ask

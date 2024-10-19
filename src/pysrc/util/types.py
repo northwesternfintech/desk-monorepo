@@ -29,6 +29,7 @@ class Asset(Enum):
     SHIB = 10
     DOT = 11
 
+
 class Server(Enum):
     BLACK = 1
     SCHOLES = 2
