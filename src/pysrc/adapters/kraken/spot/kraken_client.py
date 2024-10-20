@@ -1,5 +1,5 @@
 import requests
-from pysrc.util.conversions import enum_to_string, string_to_enum
+from pysrc.util.enum_conversions import enum_to_string, string_to_enum
 from pysrc.adapters.kraken.spot.containers import (
     SystemStatus,
     AssetInfo,
@@ -15,14 +15,11 @@ from pysrc.util.types import Asset, Market, OrderSide
 from pysrc.adapters.messages import TradeMessage, SnapshotMessage
 
 KRAKEN_API_LIVE_BASE_URL = "https://api.kraken.com/0/public/"
-KRAKEN_API_TESTNET_BASE_URL = ""
 
 
 class KrakenClient:
-    def __init__(self, use_live_api: bool = True):
-        self._base_url: str = (
-            KRAKEN_API_LIVE_BASE_URL if use_live_api else KRAKEN_API_TESTNET_BASE_URL
-        )
+    def __init__(self) -> None:
+        self._base_url: str = KRAKEN_API_LIVE_BASE_URL
         self._kraken_to_asset = {"XXBTZUSD": Asset.BTC}
         self._asset_to_kraken = {Asset.BTC: "XXBTZUSD"}
 
@@ -66,10 +63,10 @@ class KrakenClient:
 
     def get_tradeable_asset_pairs(
         self,
-        pairs: list[Asset],
+        assets: list[Asset],
         info: TradeableAssetPairParam = TradeableAssetPairParam.INFO,
     ) -> Dict[str, AssetPairInfo]:
-        pair_param = ",".join([f"{enum_to_string(asset)}/USDT" for asset in pairs])
+        pair_param = ",".join([f"{enum_to_string(asset)}/USDT" for asset in assets])
 
         route = "AssetPairs"
         params = {
@@ -81,7 +78,6 @@ class KrakenClient:
 
         asset_pairs = {}
         for pair_name, pair_data in response["result"].items():
-            print(pair_name)
             asset_pairs[pair_name] = AssetPairInfo(
                 altname=pair_data["altname"],
                 wsname=pair_data.get("wsname"),
@@ -93,14 +89,17 @@ class KrakenClient:
         return asset_pairs
 
     def get_ohlc_data(
-        self, asset: Asset, interval: int = 1, since: Optional[int] = None
+        self,
+        asset: Asset,
+        time_frame_interval: int = 1,
+        since_time: Optional[int] = None,
     ) -> OHLCData:
         pair_param = f"{enum_to_string(asset)}USD"
 
         route = "OHLC"
-        params = {"pair": pair_param, "interval": interval}
-        if since:
-            params["since"] = since
+        params = {"pair": pair_param, "interval": time_frame_interval}
+        if since_time:
+            params["since"] = since_time
 
         response = self._get(route, params=params)
 
@@ -129,15 +128,14 @@ class KrakenClient:
             last=last_timestamp,
         )
 
-    def get_order_book(self, asset: Asset, count: int = 100) -> SnapshotMessage:
+    def get_order_book(self, asset: Asset, num_entries: int = 100) -> SnapshotMessage:
         pair_param = f"{enum_to_string(asset)}USD"
 
         route = "Depth"
-        params = {"pair": pair_param, "count": count}
+        params = {"pair": pair_param, "count": num_entries}
 
         response = self._get(route, params=params)
         order_book_data = response["result"][self._asset_to_kraken[asset]]
-
         bids = [[price, volume] for price, volume, _ in order_book_data["bids"]]
         asks = [[price, volume] for price, volume, _ in order_book_data["asks"]]
         timestamp = int(order_book_data["bids"][0][2])
@@ -152,14 +150,14 @@ class KrakenClient:
         )
 
     def get_recent_trades(
-        self, asset: Asset, since: Optional[int] = None, count: int = 1000
+        self, asset: Asset, since_time: Optional[int] = None, num_entries: int = 1000
     ) -> list[TradeMessage]:
         pair_param = f"{enum_to_string(asset)}USD"
 
         route = "Trades"
-        params = {"pair": pair_param, "count": count}
-        if since:
-            params["since"] = str(since)
+        params = {"pair": pair_param, "count": num_entries}
+        if since_time:
+            params["since"] = str(since_time)
 
         response = self._get(route, params=params)
 
@@ -187,14 +185,14 @@ class KrakenClient:
         return trades
 
     def get_recent_spreads(
-        self, asset: Asset, since: Optional[int] = None
+        self, asset: Asset, since_time: Optional[int] = None
     ) -> list[SpreadMessage]:
         pair_param = f"{enum_to_string(asset)}USD"
 
         route = "Spread"
         params = {"pair": pair_param}
-        if since:
-            params["since"] = str(since)
+        if since_time:
+            params["since"] = str(since_time)
 
         response = self._get(route, params=params)
 

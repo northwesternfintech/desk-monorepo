@@ -13,7 +13,7 @@ from pysrc.adapters.kraken.spot.containers import (
 )
 from pysrc.adapters.messages import SnapshotMessage, TradeMessage
 from pysrc.util.types import Market, OrderSide
-from pysrc.util.conversions import string_to_enum
+from pysrc.util.enum_conversions import string_to_enum
 
 
 @pytest.fixture
