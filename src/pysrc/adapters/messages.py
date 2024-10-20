@@ -14,6 +14,7 @@ class SnapshotMessage:
         self.feedcode = feedcode
         self.bids: list[tuple[float, float]] = []
         self.asks: list[tuple[float, float]] = []
+        self.market = market
         for price, volume in bids:
             volume_float = float(volume)
             if volume_float != 0.0:
@@ -43,7 +44,7 @@ class TradeMessage:
         market: Market,
     ):
         self.time = time
-        self.feecode = feedcode
+        self.feedcode = feedcode
         self.n_trades = n_trades
         self.quantity = quantity
         self.price = price
