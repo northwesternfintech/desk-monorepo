@@ -11,9 +11,3 @@ def check_lasso_models(directory_path: Path, assets: list[Asset]) -> bool:
         if not model_path.exists():
             return False
     return True
-
-
-
-# from pysrc.test.helpers import get_resources_path
-# resource_path = get_resources_path(Path(__file__).resolve())
-# print(resource_path)
