@@ -29,6 +29,8 @@ _asset_to_kraken = {
 
 
 def kraken_to_asset(kraken_name: str) -> Asset:
+    if kraken_name not in _kraken_to_asset:
+        raise Exception("Invalid kraken asset label — cannot convert to asset enum")
     return _kraken_to_asset[kraken_name]
 
 
