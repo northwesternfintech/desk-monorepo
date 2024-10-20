@@ -3,7 +3,7 @@ from pysrc.util.enum_conversions import enum_to_string
 from pathlib import Path
 
 def asset_to_model_filename(asset: Asset) -> str:
-    return(enum_to_string(asset) + "_lasso.pkl")
+    return(f"{enum_to_string(asset)}_lasso.pkl")
 
 def search_model_in_directory(directory_path: Path, assets: list[Asset]) -> bool:
     for asset in assets:
