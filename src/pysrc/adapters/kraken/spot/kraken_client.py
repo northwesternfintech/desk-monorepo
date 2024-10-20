@@ -1,5 +1,6 @@
 import requests
 from pysrc.util.enum_conversions import enum_to_string, string_to_enum
+from pysrc.adapters.kraken.asset_mappings import asset_to_kraken, kraken_to_asset
 from pysrc.adapters.kraken.spot.containers import (
     SystemStatus,
     AssetInfo,
@@ -20,20 +21,6 @@ KRAKEN_API_LIVE_BASE_URL = "https://api.kraken.com/0/public/"
 class KrakenClient:
     def __init__(self) -> None:
         self._base_url: str = KRAKEN_API_LIVE_BASE_URL
-        self._kraken_to_asset = {
-            "XXBTZUSD": Asset.BTC,
-            "XETHZUSD": Asset.ETH,
-            "XWIFZUSD": Asset.WIF,
-            "XXRPZUSD": Asset.XRP,
-            "XSOLZUSD": Asset.SOL,
-            "XDOGEZUSD": Asset.DOGE,
-            "XTRXZUSD": Asset.TRX,
-            "XADAZUSD": Asset.ADA,
-            "XAVAXZUSD": Asset.AVAX,
-            "XSHIBZUSD": Asset.SHIB,
-            "XDOTZUSD": Asset.DOT,
-        }
-        self._asset_to_kraken = {v: k for k, v in self._kraken_to_asset.items()}
 
     def _get(
         self, endpoint: str, params: Optional[Mapping[str, Any]] = None
@@ -60,7 +47,7 @@ class KrakenClient:
 
     def get_asset_info(self, asset: Asset, aclass: str = "currency") -> AssetInfo:
         route = "Assets"
-        params = {"asset": asset.name, "aclass": aclass}
+        params = {"asset": enum_to_string(asset), "aclass": aclass}
 
         response = self._get(route, params)
         asset_data = response["result"][asset.name]
@@ -118,7 +105,7 @@ class KrakenClient:
         last_timestamp = response["result"].get("last", None)
 
         pair_name = list(response["result"].keys())[0]
-        tick_data = response["result"][self._asset_to_kraken[asset]]
+        tick_data = response["result"][asset_to_kraken(asset)]
 
         ohlc_ticks = [
             OHLCTick(
@@ -135,7 +122,7 @@ class KrakenClient:
         ]
 
         return OHLCData(
-            asset=self._kraken_to_asset[pair_name],
+            asset=kraken_to_asset(pair_name),
             ticks=ohlc_ticks,
             last=last_timestamp,
         )
@@ -147,7 +134,7 @@ class KrakenClient:
         params = {"pair": pair_param, "count": num_entries}
 
         response = self._get(route, params=params)
-        order_book_data = response["result"][self._asset_to_kraken[asset]]
+        order_book_data = response["result"][asset_to_kraken(asset)]
         bids = [[price, volume] for price, volume, _ in order_book_data["bids"]]
         asks = [[price, volume] for price, volume, _ in order_book_data["asks"]]
         timestamp = int(order_book_data["bids"][0][2])
@@ -173,7 +160,7 @@ class KrakenClient:
 
         response = self._get(route, params=params)
 
-        trade_data = response["result"][self._asset_to_kraken[asset]]
+        trade_data = response["result"][asset_to_kraken(asset)]
         trades = []
 
         for trade in trade_data:
@@ -208,7 +195,7 @@ class KrakenClient:
 
         response = self._get(route, params=params)
 
-        spread_data = response["result"][self._asset_to_kraken[asset]]
+        spread_data = response["result"][asset_to_kraken(asset)]
         spreads = []
 
         for spread in spread_data:
