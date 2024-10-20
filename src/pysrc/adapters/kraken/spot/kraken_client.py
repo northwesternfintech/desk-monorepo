@@ -20,8 +20,20 @@ KRAKEN_API_LIVE_BASE_URL = "https://api.kraken.com/0/public/"
 class KrakenClient:
     def __init__(self) -> None:
         self._base_url: str = KRAKEN_API_LIVE_BASE_URL
-        self._kraken_to_asset = {"XXBTZUSD": Asset.BTC}
-        self._asset_to_kraken = {Asset.BTC: "XXBTZUSD"}
+        self._kraken_to_asset = {
+            "XXBTZUSD": Asset.BTC,
+            "XETHZUSD": Asset.ETH,
+            "XWIFZUSD": Asset.WIF,
+            "XXRPZUSD": Asset.XRP,
+            "XSOLZUSD": Asset.SOL,
+            "XDOGEZUSD": Asset.DOGE,
+            "XTRXZUSD": Asset.TRX,
+            "XADAZUSD": Asset.ADA,
+            "XAVAXZUSD": Asset.AVAX,
+            "XSHIBZUSD": Asset.SHIB,
+            "XDOTZUSD": Asset.DOT,
+        }
+        self._asset_to_kraken = {v: k for k, v in self._kraken_to_asset.items()}
 
     def _get(
         self, endpoint: str, params: Optional[Mapping[str, Any]] = None
