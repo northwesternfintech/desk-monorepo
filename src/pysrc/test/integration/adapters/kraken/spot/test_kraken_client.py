@@ -15,6 +15,8 @@ from pysrc.adapters.kraken.spot.containers import (
 def test_system_status() -> None:
     client = KrakenClient()
     assert client.get_system_status() == SystemStatus.ONLINE
+    x = 5 +        10
+    x +=4
 
 
 def test_get_asset_info() -> None:
