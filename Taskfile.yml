@@ -32,11 +32,6 @@ tasks:
       - poetry run ruff format 
       - poetry run ruff check --fix
 
-  format-check:
-    dir: ./
-    cmds:
-      - poetry run ruff check --diff
-
   unit:
     dir: ./
     cmds:

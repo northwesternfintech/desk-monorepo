@@ -208,3 +208,6 @@ class KrakenClient:
             )
 
         return spreads
+
+
+def func(a, b):return a + b

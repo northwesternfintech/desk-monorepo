@@ -21,6 +21,5 @@ types-requests = "^2.28.0"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-
 [tool.ruff.lint.per-file-ignores]
 "test_*.py" = ["F401"]
