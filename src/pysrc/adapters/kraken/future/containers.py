@@ -100,7 +100,7 @@ class TradeHistory:
         uid: Optional[TradeHistoryType],
         instrument_identification_type: Optional[str],
         isin: Optional[str],
-        execution_venue: Optional[str]
+        execution_venue: Optional[str],
         price_notation: Optional[str],
         price_currency: Optional[str],
         notional_amount: Optional[float],
@@ -130,13 +130,15 @@ class TradeHistory:
         self.transaction_identification_code = transaction_identification_code
         self.to_be_cleared = to_be_cleared
 
+class OrderbookEntry:
+    def __init__(self, side: OrderSide, price: float, quantity: float):
+        self.side = side
+        self.price = price
+        self.quantity = quantity
+
 class Orderbook:
-    def __init__(
-        self,
-        symbol: str,
-        asks: Order[],
-        bids: Order[]
-    ):
+    def __init__(self, symbol: str, asks: list[OrderbookEntry], bids: list[OrderbookEntry]):
         self.symbol = symbol
         self.asks = asks
         self.bids = bids
+
