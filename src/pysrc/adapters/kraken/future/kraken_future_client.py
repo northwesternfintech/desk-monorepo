@@ -23,7 +23,9 @@ from pysrc.adapters.kraken.future.utils import (order_side_to_str,
                                                 str_to_position_side,
                                                 str_to_trigger_signal,
                                                 trigger_signal_to_str,
-                                                url_encode_dict)
+                                                url_encode_dict,
+                                                serialize_history,
+                                                serialize_order_from_orderbook)
 
 FUTURES_API_LIVE_BASE_URL = "https://futures.kraken.com/derivatives"
 FUTURES_API_TESTNET_BASE_URL = "https://demo-futures.kraken.com/derivatives"
@@ -116,7 +118,7 @@ class KrakenFutureClient:
         response = requests.get(f'{url}?{params}').json()
 
         return list(map(
-            lambda x: self._serialize_history(symbol, x),
+            lambda x: serialize_history(symbol, x),
             response["history"]
         ))
 
@@ -126,8 +128,8 @@ class KrakenFutureClient:
 
         response = requests.get(f'{url}?{params}').json()
 
-        asks = list(map(lambda x: self._serialize_order_from_orderbook(True, x), response["orderBook"]["asks"]))
-        bids = list(map(lambda x: self._serialize_order_from_orderbook(False, x), response["orderBook"]["bids"]))
+        asks = list(map(lambda x: serialize_order_from_orderbook(True, x), response["orderBook"]["asks"]))
+        bids = list(map(lambda x: serialize_order_from_orderbook(False, x), response["orderBook"]["bids"]))
 
         return Orderbook(symbol, asks, bids)
 
@@ -359,56 +361,4 @@ class KrakenFutureClient:
             cancelled_order_ids.append(order["order_id"])
 
         return cancelled_order_ids
-        
-def _string_to_history_type(self, history_type: str) -> TradeHistoryType:
-        match history_type:
-            case "fill":
-                return TradeHistoryType.FILL
-            case "liquidation":
-                return TradeHistoryType.LIQUIDATION
-            case "assignment":
-                return TradeHistoryType.ASSIGNMENT
-            case "termination":
-                return TradeHistoryType.TERMINATION
-            case "block":
-                return TradeHistoryType.BLOCK
-            case _:
-                return TradeHistoryType.FILL
-
-    def _string_to_taker_side(self, side: str) -> TakerSide:
-        match side:
-            case "buy":
-                return TakerSide.BUY
-            case "sell":
-                return TakerSide.SELL
-            case _:
-                return TakerSide.BUY
-
-    def _serialize_history(self, symbol: str, hist: dict) -> TradeHistory:
-        return TradeHistory(
-            symbol,
-            hist.get("price", 0),
-            self._string_to_taker_side(hist.get("side", "")),
-            hist.get("side"),
-            hist.get("time", ""),
-            hist.get("trade_id", 0),
-            self._string_to_history_type(hist.get("type", "")),
-            hist.get("uid"),
-            hist.get("instrument_identification_type"),
-            hist.get("isin"),
-            hist.get("execution_venue"),
-            hist.get("price_notation"),
-            hist.get("price_currency"),
-            hist.get("notional_amount"),
-            hist.get("notional_currency"),
-            hist.get("publication_time"),
-            hist.get("publication_venue"),
-            hist.get("transaction_identification_code"),
-            hist.get("to_be_cleared")
-        )
-
-    def _serialize_order_from_orderbook(self, isAsk: bool, x: list[float]) -> OrderbookEntry:
-        if isAsk:
-            return OrderbookEntry(OrderSide.ASK, x[1], x[0])
-        else:
-            return OrderbookEntry(OrderSide.BID, x[1], x[0])
+    

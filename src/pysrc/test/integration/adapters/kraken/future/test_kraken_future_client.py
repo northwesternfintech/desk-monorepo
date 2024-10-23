@@ -8,7 +8,7 @@
 # iw8uwgGZGfP1x9YnSB6Q8sQbuYKwlrNITqoLoe9ue292ReukNuQ02UQ3Eb93Wu629TEZIIZehEnkWMVFmYB3Y34B
 
 import os
-from pysrc.adapters.kraken.future.containers import Order, OrderRequest, OrderStatus, OrderType
+from pysrc.adapters.kraken.future.containers import Order, OrderRequest, OrderStatus, OrderType, TakerSide, TradeHistoryType, Orderbook, TradeHistory
 from pysrc.adapters.kraken.future.kraken_future_client import KrakenFutureClient
 from pysrc.util.types import OrderSide
 
@@ -29,7 +29,7 @@ def client() -> KrakenFutureClient:
         private_key=private_key,
         use_live_api=False)
 
-def test_place_and_cancel(client) -> None:
+def test_place_and_cancel(client: KrakenFutureClient) -> None:
     # cancel any existing orders
     open_orders = client.get_open_orders()
     for order in open_orders:
@@ -93,3 +93,11 @@ def test_place_and_cancel(client) -> None:
     res = client.cancel_all_orders("PI_XBTUSD")
     assert set(res) == set(open_order_ids)
 
+def test_get_history(client: KrakenFutureClient) -> None:
+    results = client.get_history("PI_XBTUSD")
+    assert len(results) > 0
+
+def test_get_orderbook(client: KrakenFutureClient) -> None:
+    results = client.get_orderbook("PI_XBTUSD")
+    assert len(results.asks) > 0
+    assert len(results.bids) > 0
