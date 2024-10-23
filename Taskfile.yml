@@ -25,6 +25,7 @@ tasks:
     cmds:
       - poetry run mypy .
       - poetry run ruff check .
+      - poetry run ruff format --check
 
   format:
     dir: ./
