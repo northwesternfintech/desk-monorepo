@@ -1,5 +1,4 @@
 from pysrc.adapters.kraken.future.containers import TradeHistory, TradeHistoryType, TakerSide, Orderbook, OrderbookEntry
-from typing import Optional
 import requests
 from pysrc.util.types import OrderSide
 
@@ -17,7 +16,7 @@ class KrakenFutureClient:
             FUTURES_API_LIVE_BASE_URL if use_live_api else FUTURES_API_TESTNET_BASE_URL
         )
 
-    def get_history(self, symbol: str, lastTime: Optional[int] = 0) -> list[TradeHistory]:
+    def get_history(self, symbol: str, lastTime: int = 0) -> list[TradeHistory]:
         url = f'{self.base_url}history'
         params = f'symbol={symbol}'
         if lastTime > 0:
@@ -104,12 +103,12 @@ class KrakenFutureClient:
     def _serialize_history(self, symbol: str, hist: dict) -> TradeHistory:
         return TradeHistory(
             symbol,
-            hist.get("price"),
-            self._string_to_taker_side(hist.get("side")),
+            hist.get("price", 0),
+            self._string_to_taker_side(hist.get("side", "")),
             hist.get("side"),
-            hist.get("time"),
-            hist.get("trade_id"),
-            self._string_to_history_type(hist.get("type")),
+            hist.get("time", ""),
+            hist.get("trade_id", 0),
+            self._string_to_history_type(hist.get("type", "")),
             hist.get("uid"),
             hist.get("instrument_identification_type"),
             hist.get("isin"),
