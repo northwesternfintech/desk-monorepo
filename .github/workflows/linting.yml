@@ -32,8 +32,5 @@ jobs:
     - name: Install poetry dependencies
       run: task install
 
-    - name: Check ruff formatting
-      run: task check
-
     - name: Run ruff and mypy
       run: task lint
