@@ -33,7 +33,7 @@ jobs:
       run: task install
 
     - name: Check ruff formatting
-      run: poetry run ruff format --diff .
+      run: task check
 
     - name: Run ruff and mypy
       run: task lint
