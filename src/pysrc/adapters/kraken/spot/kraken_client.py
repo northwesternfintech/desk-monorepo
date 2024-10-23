@@ -208,4 +208,3 @@ class KrakenClient:
             )
 
         return spreads
-
