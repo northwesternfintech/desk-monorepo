@@ -12,7 +12,6 @@ tasks:
     cmds:
       - task lint
       - task unit
-      - task check
 
   ci:
     dir: ./
@@ -26,17 +25,13 @@ tasks:
     cmds:
       - poetry run mypy .
       - poetry run ruff check .
+      - poetry run ruff format --check
 
   format:
     dir: ./
     cmds:
       - poetry run ruff format 
       - poetry run ruff check --fix
-  
-  check:
-    dir: ./
-    cmds:
-      - poetry run ruff check --diff
 
   unit:
     dir: ./
