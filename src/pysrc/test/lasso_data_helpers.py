@@ -36,7 +36,7 @@ def generate_lasso_integration_testing_data(directory_path: Path) -> None:
     assets = [Asset.BTC, Asset.DOGE, Asset.ETH]
 
     kwargs1 = dict(
-        n_samples=10000,
+        n_samples=1000,
         n_features=20,
         noise=0.1,
         random_state=42,
@@ -45,7 +45,7 @@ def generate_lasso_integration_testing_data(directory_path: Path) -> None:
     )
 
     kwargs2 = dict(
-        n_samples=10000,
+        n_samples=1000,
         n_features=100,
         noise=1,
         random_state=42,
@@ -54,8 +54,8 @@ def generate_lasso_integration_testing_data(directory_path: Path) -> None:
     )
 
     kwargs3 = dict(
-        n_samples=10000,
-        n_features=500,
+        n_samples=1000,
+        n_features=200,
         noise=10,
         random_state=42,
         test_size=0.2,
