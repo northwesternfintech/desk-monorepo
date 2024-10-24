@@ -101,3 +101,58 @@ class OpenPosition:
         self.price = price
         self.fill_time = fill_time
         self.size = size
+
+
+class TradeHistoryType(Enum):
+    FILL = 1
+    LIQUIDATION = 2
+    ASSIGNMENT = 3
+    TERMINATION = 4
+    BLOCK = 5
+
+class TakerSide(Enum):
+    BUY = 1
+    SELL = 2
+
+class TradeHistory:
+    def __init__(
+        self,
+        symbol: str,
+        price: float,
+        side: Optional[TakerSide],
+        size: Optional[float],
+        time: str,
+        trade_id: int,
+        historyType: Optional[TradeHistoryType],
+        uid: Optional[TradeHistoryType],
+        instrument_identification_type: Optional[str],
+        isin: Optional[str],
+        execution_venue: Optional[str],
+        price_notation: Optional[str],
+        price_currency: Optional[str],
+        notional_amount: Optional[float],
+        notional_currency: Optional[str],
+        publication_time: Optional[str],
+        publication_venue: Optional[str],
+        transaction_identification_code: Optional[str],
+        to_be_cleared: Optional[bool]
+    ):
+        self.symbol = symbol
+        self.price = price
+        self.side = side
+        self.size = size
+        self.time = time
+        self.trade_id = trade_id
+        self.type = historyType
+        self.uid = uid
+        self.instrument_identification_type = instrument_identification_type
+        self.isin = isin
+        self.execution_venue = execution_venue
+        self.price_notation = price_notation
+        self.price_currency = price_currency
+        self.notional_amount = notional_amount
+        self.notional_currency = notional_currency
+        self.publication_time = publication_time
+        self.publication_venue = publication_venue
+        self.transaction_identification_code = transaction_identification_code
+        self.to_be_cleared = to_be_cleared

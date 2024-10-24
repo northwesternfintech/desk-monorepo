@@ -9,7 +9,9 @@ from typing import Optional
 import requests
 
 from pysrc.adapters.kraken.future.containers import (OpenPosition, Order,
-                                                     OrderRequest, OrderStatus)
+                                                     OrderRequest, OrderStatus,
+                                                     TradeHistory, TradeHistoryType,
+                                                     TakerSide)
 from pysrc.adapters.kraken.future.utils import (order_side_to_str,
                                                 order_status_to_str,
                                                 order_type_to_str,
@@ -20,7 +22,11 @@ from pysrc.adapters.kraken.future.utils import (order_side_to_str,
                                                 str_to_position_side,
                                                 str_to_trigger_signal,
                                                 trigger_signal_to_str,
-                                                url_encode_dict)
+                                                url_encode_dict,
+                                                serialize_history)
+
+from pysrc.adapters.messages import SnapshotMessage
+from pysrc.util.types import Market
 
 FUTURES_API_LIVE_BASE_URL = "https://futures.kraken.com/derivatives"
 FUTURES_API_TESTNET_BASE_URL = "https://demo-futures.kraken.com/derivatives"
@@ -40,6 +46,7 @@ class KrakenFutureClient:
         self._private_key = private_key
 
         self._private_session = requests.Session()
+        self._public_session = requests.Session()
 
     def _calculate_authent(self, encoded_data: str, api_route: str) -> str:
         msg = encoded_data + api_route
@@ -79,6 +86,33 @@ class KrakenFutureClient:
         
         return res
 
+    def _make_public_request(self, request_type: str, api_route: str, params: dict[str] = {}) -> dict:
+        url = self._base_url + api_route
+
+        res = None
+        match request_type:
+            case "POST":
+                res = self._public_session.post(url, params=params).json()
+            case "GET":
+                res = self._public_session.get(url, params=params).json()
+            case _:
+                raise ValueError(f"Unknown request type '{request_type}'")
+        
+        # res = req_func(url, params=params).json()
+        # print(res)
+        if res["result"] == "error":
+            err = None
+            if "errors" in res:
+                err = res["errors"]
+            elif "error" in res:
+                err = res["error"]
+            else:
+                err = "Unknown error"
+
+            raise ValueError(f"Route {api_route} failed with error '{err}'")
+        
+        return res
+
     def get_open_positions(self) -> list[OpenPosition]:
         route = "/api/v3/openpositions"
         res = self._make_private_request("GET", route)
@@ -104,6 +138,36 @@ class KrakenFutureClient:
 
         return open_positions
 
+    def get_history(self, symbol: str, lastTime: int = 0) -> list[TradeHistory]:
+
+        params = {
+            "symbol": symbol
+        }
+        if lastTime > 0:
+            params["lastTime"] = lastTime
+
+        response = self._make_public_request("GET", "/history", params = params)
+
+        return list(map(
+            lambda x: serialize_history(symbol, x),
+            response["history"]
+        ))
+
+    def get_orderbook(self, symbol: str) -> SnapshotMessage:
+        params = {
+            "symbol": symbol
+        }
+
+        response = self._make_public_request("GET", "/orderbook", params = params)
+
+        time = response["serverTime"]
+        asks = response["orderBook"]["asks"]
+        bids = response["orderBook"]["bids"]
+
+        return SnapshotMessage(time, symbol, bids, asks, Market.KRAKEN_USD_FUTURE)
+
+    # def get_open_positions(self) -> list[OpenPosition]:
+    #     pass
 
     def get_open_orders(self) -> list[Order]:
         route = "/api/v3/openorders"
@@ -290,9 +354,9 @@ class KrakenFutureClient:
 
         return edit_status["status"] == order_status_to_str(OrderStatus.EDITED)
 
-    def batch_edit_order(self, new_order_requests: dict[str, OrderRequest]) -> list[str]:
-        # returns map of order_id -> status
-        pass
+    # def batch_edit_order(self, new_order_requests: dict[str, OrderRequest]) -> list[str]:
+    #     # returns map of order_id -> status
+    #     pass
 
     def cancel_order(self, order_id: str, process_before: Optional[str] = None) -> OrderStatus:
         route = "/api/v3/cancelorder"
@@ -311,9 +375,9 @@ class KrakenFutureClient:
             # only happens if the order can't be found
             return OrderStatus.REJECTED
 
-    def batch_cancel_order(self, order_ids: list[str]) -> dict[str, OrderStatus]:
-        # returns map of order_id -> status
-        pass
+    # def batch_cancel_order(self, order_ids: list[str]) -> dict[str, OrderStatus]:
+    #     # returns map of order_id -> status
+    #     pass
 
     def cancel_all_orders(self, symbol: str) -> list[str]:
         route = "/api/v3/cancelallorders"
@@ -330,4 +394,4 @@ class KrakenFutureClient:
             cancelled_order_ids.append(order["order_id"])
 
         return cancelled_order_ids
-        
+    
