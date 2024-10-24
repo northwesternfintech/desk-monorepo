@@ -1,5 +1,5 @@
 import urllib
-from pysrc.adapters.kraken.future.containers import OrderStatus, OrderType, PositionSide, PriceUnit, TriggerSignal, TradeHistoryType, TradeHistory, TakerSide, OrderbookEntry
+from pysrc.adapters.kraken.future.containers import OrderStatus, OrderType, PositionSide, PriceUnit, TriggerSignal, TradeHistoryType, TradeHistory, TakerSide
 from pysrc.util.types import OrderSide
 
 
@@ -108,9 +108,3 @@ def serialize_history(symbol: str, hist: dict) -> TradeHistory:
         hist.get("transaction_identification_code"),
         hist.get("to_be_cleared")
     )
-
-def serialize_order_from_orderbook(isAsk: bool, x: list[float]) -> OrderbookEntry:
-    if isAsk:
-        return OrderbookEntry(OrderSide.ASK, x[1], x[0])
-    else:
-        return OrderbookEntry(OrderSide.BID, x[1], x[0])

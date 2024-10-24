@@ -8,7 +8,7 @@
 # iw8uwgGZGfP1x9YnSB6Q8sQbuYKwlrNITqoLoe9ue292ReukNuQ02UQ3Eb93Wu629TEZIIZehEnkWMVFmYB3Y34B
 
 import os
-from pysrc.adapters.kraken.future.containers import Order, OrderRequest, OrderStatus, OrderType, TakerSide, TradeHistoryType, Orderbook, TradeHistory
+from pysrc.adapters.kraken.future.containers import Order, OrderRequest, OrderStatus, OrderType, TakerSide, TradeHistoryType, TradeHistory
 from pysrc.adapters.kraken.future.kraken_future_client import KrakenFutureClient
 from pysrc.util.types import OrderSide
 

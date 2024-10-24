@@ -156,16 +156,3 @@ class TradeHistory:
         self.publication_venue = publication_venue
         self.transaction_identification_code = transaction_identification_code
         self.to_be_cleared = to_be_cleared
-
-class OrderbookEntry:
-    def __init__(self, side: OrderSide, price: float, quantity: float):
-        self.side = side
-        self.price = price
-        self.quantity = quantity
-
-class Orderbook:
-    def __init__(self, symbol: str, asks: list[OrderbookEntry], bids: list[OrderbookEntry]):
-        self.symbol = symbol
-        self.asks = asks
-        self.bids = bids
-
