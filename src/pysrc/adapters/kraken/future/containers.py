@@ -1,4 +1,4 @@
-from util import exceptions
+from pysrc.util import exceptions
 
 def safe_at(list, idx):
     if idx < 0 or idx >= len(list):
