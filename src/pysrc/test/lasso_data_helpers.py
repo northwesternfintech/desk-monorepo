@@ -2,7 +2,7 @@ import numpy as np
 from pathlib import Path
 from pysrc.util.types import Asset
 from pysrc.util.lasso_utils import asset_to_model_filename
-from pysrc.util.pickle_utils import load_pickle, store_pickle
+from pysrc.util.pickle_utils import store_pickle
 from pysrc.util.enum_conversions import enum_to_string
 
 from sklearn.linear_model import Lasso
@@ -74,26 +74,3 @@ def generate_lasso_integration_testing_data(directory_path: Path) -> None:
         store_pickle(
             lasso_model, directory_path.joinpath(asset_to_model_filename(asset))
         )
-
-
-def test_lasso_integration_testing_data(directory_path: Path) -> None:
-    assets = [Asset.BTC, Asset.DOGE, Asset.ETH]
-    for asset in assets:
-        asset_str = enum_to_string(asset)
-        test_data = load_pickle(directory_path.joinpath(f"{asset_str}_test_data.pkl"))
-        X_test = test_data[:, :-1]
-        y_test = test_data[:, -1]
-        lasso_model = load_pickle(
-            directory_path.joinpath(asset_to_model_filename(asset))
-        )
-        score = lasso_model.score(X_test, y_test)
-        print(f"{asset} model R-squared score: {score}")
-
-    print(type(X_test))
-    print(X_test.shape, y_test.shape, test_data.shape)
-
-
-# if __name__ == '__main__':
-#     directory_path = Path(__file__).parent.joinpath('integration/resources')
-#     generate_lasso_integration_testing_data(directory_path)
-#     test_lasso_integration_testing_data(directory_path)
