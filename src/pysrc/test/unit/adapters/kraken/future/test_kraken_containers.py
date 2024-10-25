@@ -22,6 +22,7 @@ def test_safe_at() -> None:
     ):
         safe_at(testList, -4)
 
+
 def test_get_single() -> None:
     testSingleFailList: list[int] = []
     testSingleFailList2 = [1, 2]
