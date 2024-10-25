@@ -15,8 +15,13 @@ def test_safe_at() -> int:
     with pytest.raises(AssertionError, match="Safe at failed due to index out of bounds"):
         safe_at(testList, 3)
 
+    with pytest.raises(AssertionError, match="Safe at failed due to index out of bounds"):
+        safe_at(testList, -4)
+
+    return 0
+
 def test_get_single() -> int:
-    testSingleFailList = []
+    testSingleFailList: list[int] = []
     testSingleFailList2 = [1,2]
     singleList = [1]
 
@@ -27,3 +32,5 @@ def test_get_single() -> int:
 
     with pytest.raises(AssertionError, match="Get single failed due to list not having exactly one element"):
         get_single(testSingleFailList2)
+
+    return 0
