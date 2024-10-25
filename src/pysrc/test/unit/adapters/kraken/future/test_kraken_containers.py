@@ -8,6 +8,9 @@ def test_safe_at() -> int:
     assert(safe_at(testList, 0) == 1)
     assert(safe_at(testList, 1) == 2)
     assert(safe_at(testList, 2) == 3)
+    assert(safe_at(testList, -1) == 3)
+    assert(safe_at(testList, -2) == 2)
+    assert(safe_at(testList, -3) == 1)
 
     with pytest.raises(AssertionError, match="Safe at failed due to index out of bounds"):
         safe_at(testList, 3)
