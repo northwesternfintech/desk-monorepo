@@ -5,6 +5,7 @@ from pysrc.adapters.kraken.future.utils import string_to_taker_side, string_to_h
 def test_taker_side_conversion() -> None:
     assert string_to_taker_side("buy") == TakerSide.BUY
     assert string_to_taker_side("sell") == TakerSide.SELL
+    assert string_to_taker_side("john") == None
 
 def test_history_type_conversion() -> None:
     assert string_to_history_type("fill") == TradeHistoryType.FILL
@@ -12,3 +13,4 @@ def test_history_type_conversion() -> None:
     assert string_to_history_type("assignment") == TradeHistoryType.ASSIGNMENT
     assert string_to_history_type("termination") == TradeHistoryType.TERMINATION
     assert string_to_history_type("block") == TradeHistoryType.BLOCK
+    assert string_to_history_type("john") == None

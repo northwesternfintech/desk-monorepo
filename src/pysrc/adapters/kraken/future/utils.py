@@ -63,48 +63,36 @@ def url_encode_dict(d: dict[str]) -> str:
     return urllib.parse.urlencode(cleaned_dict)
 
 def string_to_history_type(history_type: str) -> TradeHistoryType:
-        match history_type:
-            case "fill":
-                return TradeHistoryType.FILL
-            case "liquidation":
-                return TradeHistoryType.LIQUIDATION
-            case "assignment":
-                return TradeHistoryType.ASSIGNMENT
-            case "termination":
-                return TradeHistoryType.TERMINATION
-            case "block":
-                return TradeHistoryType.BLOCK
-            case _:
-                return TradeHistoryType.FILL
+    try:
+        return TradeHistoryType[history_type.upper()]
+    except KeyError:
+        return None
 
 def string_to_taker_side(side: str) -> TakerSide:
-    match side:
-        case "buy":
-            return TakerSide.BUY
-        case "sell":
-            return TakerSide.SELL
-        case _:
-            return TakerSide.BUY
+    try:
+        return TakerSide[side.upper()]
+    except KeyError:
+        return None
 
 def serialize_history(symbol: str, hist: dict) -> TradeHistory:
     return TradeHistory(
-        symbol,
-        hist.get("price", 0),
-        string_to_taker_side(hist.get("side", "")),
-        hist.get("side"),
-        hist.get("time", ""),
-        hist.get("trade_id", 0),
-        string_to_history_type(hist.get("type", "")),
-        hist.get("uid"),
-        hist.get("instrument_identification_type"),
-        hist.get("isin"),
-        hist.get("execution_venue"),
-        hist.get("price_notation"),
-        hist.get("price_currency"),
-        hist.get("notional_amount"),
-        hist.get("notional_currency"),
-        hist.get("publication_time"),
-        hist.get("publication_venue"),
-        hist.get("transaction_identification_code"),
-        hist.get("to_be_cleared")
+        symbol = symbol,
+        price = hist.get("price", 0),
+        time = hist.get("time", ""),
+        trade_id = hist.get("trade_id", 0),
+        side = string_to_taker_side(hist.get("side", "")),
+        size = hist.get("size"),
+        historyType = string_to_history_type(hist.get("type", "")),
+        uid = hist.get("uid"),
+        instrument_identification_type = hist.get("instrument_identification_type"),
+        isin = hist.get("isin"),
+        execution_venue = hist.get("execution_venue"),
+        price_notation = hist.get("price_notation"),
+        price_currency = hist.get("price_currency"),
+        notional_amount = hist.get("notional_amount"),
+        notional_currency = hist.get("notional_currency"),
+        publication_time = hist.get("publication_time"),
+        publication_venue = hist.get("publication_venue"),
+        transaction_identification_code = hist.get("transaction_identification_code"),
+        to_be_cleared = hist.get("to_be_cleared")
     )

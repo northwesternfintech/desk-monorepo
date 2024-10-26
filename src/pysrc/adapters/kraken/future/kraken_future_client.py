@@ -113,31 +113,6 @@ class KrakenFutureClient:
         
         return res
 
-    def get_open_positions(self) -> list[OpenPosition]:
-        route = "/api/v3/openpositions"
-        res = self._make_private_request("GET", route)
-        
-        open_positions_json = res["openPositions"]
-        open_positions = []
-        for position_json in open_positions_json:
-            position_side = str_to_position_side(position_json["side"])
-            symbol = position_json["symbol"]
-            price = position_json["price"]
-            fill_time = position_json["fillTime"]
-            size = position_json["size"]
-
-            position = OpenPosition(
-                position_side,
-                symbol,
-                price,
-                fill_time,
-                size
-            )
-
-            open_positions.append(position)
-
-        return open_positions
-
     def get_history(self, symbol: str, lastTime: int = 0) -> list[TradeHistory]:
 
         params = {
@@ -166,8 +141,30 @@ class KrakenFutureClient:
 
         return SnapshotMessage(time, symbol, bids, asks, Market.KRAKEN_USD_FUTURE)
 
-    # def get_open_positions(self) -> list[OpenPosition]:
-    #     pass
+    def get_open_positions(self) -> list[OpenPosition]:
+        route = "/api/v3/openpositions"
+        res = self._make_private_request("GET", route)
+        
+        open_positions_json = res["openPositions"]
+        open_positions = []
+        for position_json in open_positions_json:
+            position_side = str_to_position_side(position_json["side"])
+            symbol = position_json["symbol"]
+            price = position_json["price"]
+            fill_time = position_json["fillTime"]
+            size = position_json["size"]
+
+            position = OpenPosition(
+                position_side,
+                symbol,
+                price,
+                fill_time,
+                size
+            )
+
+            open_positions.append(position)
+
+        return open_positions
 
     def get_open_orders(self) -> list[Order]:
         route = "/api/v3/openorders"
