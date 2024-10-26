@@ -8,7 +8,7 @@ def safe_at[T](lst: Sequence[T], idx: int) -> T:
     return lst[idx]
 
 
-def get_single[T](singleList: Sequence[T]) -> T:
-    if len(singleList) != 1:
+def get_single[T](single_list: Sequence[T]) -> T:
+    if len(single_list) != 1:
         return DIE("Get single failed due to list not having exactly one element")
-    return singleList[0]
+    return single_list[0]
