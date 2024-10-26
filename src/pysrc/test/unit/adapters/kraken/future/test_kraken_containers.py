@@ -1,5 +1,5 @@
 from pysrc.adapters.kraken.future.containers import safe_at, get_single
-from pysrc.util import exceptions
+from pysrc.util.exceptions import DIE
 import pytest
 
 

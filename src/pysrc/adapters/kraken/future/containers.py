@@ -1,16 +1,15 @@
-from pysrc.util import exceptions
-from typing import Any, List, Optional
+from pysrc.util.exceptions import DIE
+from collections.abc import Sequence
+from typing import Any
 
 
-def safe_at(list: List[Any], idx: int) -> Optional[Any]:
+def safe_at(list: Sequence[Any], idx: int) -> Any | None:
     if (idx < 0 and abs(idx) > len(list)) or (idx >= 0 and idx >= len(list)):
-        return exceptions.DIE("Safe at failed due to index out of bounds")
+        return DIE("Safe at failed due to index out of bounds")
     return list[idx]
 
 
-def get_single(list: List[Any]) -> Optional[Any]:
+def get_single(list: Sequence[Any]) -> Any | None:
     if len(list) != 1:
-        return exceptions.DIE(
-            "Get single failed due to list not having exactly one element"
-        )
+        return DIE("Get single failed due to list not having exactly one element")
     return list[0]
