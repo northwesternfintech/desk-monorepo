@@ -31,10 +31,11 @@ def client() -> KrakenFutureClient:
     return client
 
 
-def test_place_and_cancel(client) -> None:
+def test_place_and_cancel(client: KrakenFutureClient) -> None:
     # cancel any existing orders
     open_orders = client.get_open_orders()
     for order in open_orders:
+        assert order.order_id is not None
         client.cancel_order(order.order_id)
 
     orders_to_place = [
@@ -80,14 +81,17 @@ def test_place_and_cancel(client) -> None:
 
     # check some order info
     for order in placed_orders:
+        assert order.order_id is not None
+
         order_status = client.get_order_statuses([order.order_id])
         assert order_status[0].order_id == order.order_id
         assert order_status[0].limit_price == order.limit_price
 
     # cancel one order
     order_to_cancel = placed_orders[0]
-    res = client.cancel_order(order_to_cancel.order_id)
-    assert res == OrderStatus.CANCELLED
+    assert order_to_cancel.order_id is not None
+    cancel_res = client.cancel_order(order_to_cancel.order_id)
+    assert cancel_res == OrderStatus.CANCELLED
 
     # check that order is no longer in open orders
     open_orders = client.get_open_orders()
@@ -95,14 +99,15 @@ def test_place_and_cancel(client) -> None:
     assert order_to_cancel.order_id not in open_order_ids
 
     # cancel all orders
-    res = client.cancel_all_orders("PI_XBTUSD")
-    assert set(res) == set(open_order_ids)
+    cancel_all_res = client.cancel_all_orders("PI_XBTUSD")
+    assert set(cancel_all_res) == set(open_order_ids)
 
 
-def test_edit_order(client) -> None:
+def test_edit_order(client: KrakenFutureClient) -> None:
     # cancel any existing orders
     open_orders = client.get_open_orders()
     for order in open_orders:
+        assert order.order_id is not None
         client.cancel_order(order.order_id)
 
     order = Order(
@@ -131,13 +136,16 @@ def test_edit_order(client) -> None:
     assert placed_order.order_id == order.order_id
     assert placed_order.limit_price == new_order.limit_price
 
+    assert order.order_id is not None
     assert client.cancel_order(order.order_id) == OrderStatus.CANCELLED
 
 
-def test_batch_place_and_cancel(client) -> None:
+def test_batch_place_and_cancel(client: KrakenFutureClient) -> None:
     # cancel any existing orders
     open_orders = client.get_open_orders()
-    open_order_ids = [order.order_id for order in open_orders]
+    open_order_ids = [
+        order.order_id for order in open_orders if order.order_id is not None
+    ]
     cancel_statuses = client.batch_cancel_order(open_order_ids)
 
     for order_id in open_order_ids:
@@ -173,17 +181,21 @@ def test_batch_place_and_cancel(client) -> None:
     for order in orders_to_place:
         assert order.status == OrderStatus.PLACED
 
-    order_ids = [order.order_id for order in orders_to_place]
+    order_ids = [
+        order.order_id for order in orders_to_place if order.order_id is not None
+    ]
     cancel_statuses = client.batch_cancel_order(order_ids)
 
     open_orders = client.get_open_orders()
     assert len(open_orders) == 0
 
 
-def test_batch_edit_order(client) -> None:
+def test_batch_edit_order(client: KrakenFutureClient) -> None:
     # cancel any existing orders
     open_orders = client.get_open_orders()
-    open_order_ids = [order.order_id for order in open_orders]
+    open_order_ids = [
+        order.order_id for order in open_orders if order.order_id is not None
+    ]
     client.batch_cancel_order(open_order_ids)
 
     # place orders
@@ -211,6 +223,7 @@ def test_batch_edit_order(client) -> None:
 
     # edit orders
     for order in orders_to_place:
+        assert order.limit_price is not None
         order.limit_price *= 3
 
     new_order_requests = [OrderRequest(order=order) for order in orders_to_place]
@@ -227,4 +240,6 @@ def test_batch_edit_order(client) -> None:
         assert order.limit_price == matching_order.limit_price
 
     # cancel orders
-    client.batch_cancel_order([order.order_id for order in placed_orders])
+    client.batch_cancel_order(
+        [order.order_id for order in placed_orders if order.order_id is not None]
+    )

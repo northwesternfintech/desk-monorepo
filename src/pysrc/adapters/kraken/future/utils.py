@@ -1,4 +1,4 @@
-import urllib
+from typing import Any
 
 from pysrc.adapters.kraken.future.containers import (
     OrderStatus,
@@ -68,8 +68,8 @@ def price_unit_to_str(p: PriceUnit) -> str:
     return p.name.lower()
 
 
-def remove_empty_values(d: dict[str]) -> dict[str]:
-    cleaned = {}
+def remove_empty_values(d: dict[str, Any]) -> dict[str, Any]:
+    cleaned: dict[str, Any] = {}
     for k, v in d.items():
         if v is None:
             continue
@@ -87,7 +87,7 @@ def remove_empty_values(d: dict[str]) -> dict[str]:
     return cleaned
 
 
-def kraken_encode_dict(d: dict[str]) -> str:
+def kraken_encode_dict(d: dict[str, Any]) -> str:
     cleaned = remove_empty_values(d)
 
     encoded_items = []

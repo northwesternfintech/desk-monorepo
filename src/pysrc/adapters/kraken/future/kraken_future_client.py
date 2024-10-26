@@ -1,10 +1,7 @@
 import base64
 import hashlib
 import hmac
-import json
-import time
-import urllib
-from typing import Optional
+from typing import Any, Optional
 
 import requests
 
@@ -49,19 +46,19 @@ class KrakenFutureClient:
 
     def _calculate_authent(self, encoded_data: str, api_route: str) -> str:
         msg = encoded_data + api_route
-        msg = hashlib.sha256(msg.encode("utf-8")).digest()
+        hashed_msg = hashlib.sha256(msg.encode("utf-8")).digest()
         decoded_key = base64.b64decode(self._private_key)
 
-        authent = hmac.new(decoded_key, msg, hashlib.sha512)
+        authent = hmac.new(decoded_key, hashed_msg, hashlib.sha512)
         return base64.b64encode(authent.digest()).decode()
 
     def _make_private_request(
         self,
         request_type: str,
         api_route: str,
-        params: dict[str] = {},
-        data: dict[str] = {},
-    ) -> dict:
+        params: dict[str, Any] = {},
+        data: dict[str, Any] = {},
+    ) -> Any:
         url = self._base_url + api_route
         encoded_data = kraken_encode_dict(data)
 
@@ -70,7 +67,7 @@ class KrakenFutureClient:
             "Authent": self._calculate_authent(encoded_data, api_route),
         }
 
-        req_func = None
+        req_func: Any = None
         match request_type:
             case "POST":
                 req_func = self._private_session.post
@@ -182,6 +179,9 @@ class KrakenFutureClient:
         route = "/api/v3/sendorder"
 
         order = order_request.order
+        if order.order_type is None:
+            raise ValueError("Order type must be specified")
+
         data = {
             "orderType": order_type_to_str(order.order_type),
             "symbol": order.symbol,
@@ -229,12 +229,16 @@ class KrakenFutureClient:
         self, order_requests: list[OrderRequest], process_before: Optional[str] = None
     ) -> list[Order]:
         route = "/api/v3/batchorder"
-        data = {"ProcessBefore": process_before}
+        data: dict[str, Any] = {"ProcessBefore": process_before}
 
         send_data = []
         order_tag_to_order = {}
         for i, order_request in enumerate(order_requests):
             order = order_request.order
+
+            if order.order_type is None:
+                raise ValueError(f"Order type for order at index {i} must be specified")
+
             order_data = {
                 "order_tag": str(i),
                 "order": "send",
@@ -311,7 +315,7 @@ class KrakenFutureClient:
     ) -> dict[OrderRequest, bool]:
         route = "/api/v3/batchorder"
 
-        data = {"ProcessBefore": process_before}
+        data: dict[str, Any] = {"ProcessBefore": process_before}
 
         edit_data = []
         order_id_to_order_request = {}
@@ -365,7 +369,7 @@ class KrakenFutureClient:
         try:
             status = str_to_order_status(cancel_status["status"])
             return status
-        except:
+        except Exception:
             # only happens if the order can't be found
             return OrderStatus.REJECTED
 
@@ -374,7 +378,7 @@ class KrakenFutureClient:
     ) -> dict[str, OrderStatus]:
         route = "/api/v3/batchorder"
 
-        data = {"ProcessBefore": process_before}
+        data: dict[str, Any] = {"ProcessBefore": process_before}
 
         cancel_data = []
         for id in order_ids:
@@ -394,7 +398,7 @@ class KrakenFutureClient:
             try:
                 status = str_to_order_status(status["status"])
                 order_statuses[order_id] = status
-            except:
+            except Exception:
                 # only happens if the order can't be found
                 order_statuses[order_id] = OrderStatus.REJECTED
 
