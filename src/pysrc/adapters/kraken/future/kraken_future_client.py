@@ -63,9 +63,7 @@ class KrakenFutureClient:
         data: dict[str] = {},
     ) -> dict:
         url = self._base_url + api_route
-
         encoded_data = kraken_encode_dict(data)
-        print(encoded_data)
 
         headers = {
             "APIKey": self._public_key,
@@ -82,7 +80,7 @@ class KrakenFutureClient:
                 raise ValueError(f"Unknown request type '{request_type}'")
 
         res = req_func(url, headers=headers, params=params, data=encoded_data).json()
-        print(res)
+
         if res["result"] == "error":
             err = None
             if "errors" in res:
@@ -98,18 +96,19 @@ class KrakenFutureClient:
 
     def get_open_positions(self) -> list[OpenPosition]:
         route = "/api/v3/openpositions"
-        res = self._make_private_request("GET", route)
 
+        res = self._make_private_request("GET", route)
         open_positions_json = res["openPositions"]
+
         open_positions = []
         for position_json in open_positions_json:
-            position_side = str_to_position_side(position_json["side"])
-            symbol = position_json["symbol"]
-            price = position_json["price"]
-            fill_time = position_json["fillTime"]
-            size = position_json["size"]
-
-            position = OpenPosition(position_side, symbol, price, fill_time, size)
+            position = OpenPosition(
+                position_side=str_to_position_side(position_json["side"]),
+                symbol=position_json["symbol"],
+                price=position_json["price"],
+                fill_time=position_json["fillTime"],
+                size=position_json["size"],
+            )
 
             open_positions.append(position)
 
@@ -117,50 +116,35 @@ class KrakenFutureClient:
 
     def get_open_orders(self) -> list[Order]:
         route = "/api/v3/openorders"
-        res = self._make_private_request("GET", route)
 
+        res = self._make_private_request("GET", route)
         open_orders_json = res["openOrders"]
+
         open_orders = []
         for order_json in open_orders_json:
-            order_id = order_json["order_id"]
-            symbol = order_json["symbol"]
-            side = str_to_order_side(order_json["side"])
-            order_type = str_to_order_type(order_json["orderType"])
-            limit_price = (
-                order_json["limitPrice"] if "limitPrice" in order_json else None
-            )
-            stop_price = order_json["stopPrice"] if "stopPrice" in order_json else None
             unfilled_size = order_json["unfilledSize"]
-            status = str_to_order_status(order_json["status"])
-            filled_size = (
-                order_json["filledSize"] if "filledSize" in order_json else None
-            )
-            reduce_only = order_json["reduceOnly"]
-            trigger_signal = (
-                str_to_trigger_signal(order_json["triggerSignal"])
-                if "triggerSignal" in order_json
-                else None
-            )
-            last_update_time = order_json["lastUpdateTime"]
+            filled_size = order_json.get("filledSize")
 
             size = unfilled_size
             if filled_size:
                 size += filled_size
 
             order = Order(
-                symbol=symbol,
-                side=side,
+                symbol=order_json["symbol"],
+                side=str_to_order_side(order_json["side"]),
                 size=size,
-                order_type=order_type,
-                status=status,
-                limit_price=limit_price,
-                stop_price=stop_price,
-                order_id=order_id,
+                order_type=str_to_order_type(order_json["orderType"]),
+                status=str_to_order_status(order_json["status"]),
+                limit_price=order_json.get("limitPrice"),
+                stop_price=order_json.get("stopPrice"),
+                order_id=order_json["order_id"],
                 filled_size=filled_size,
                 unfilled_size=unfilled_size,
-                reduce_only=reduce_only,
-                trigger_signal=trigger_signal,
-                last_update_time=last_update_time,
+                reduce_only=order_json["reduceOnly"],
+                trigger_signal=str_to_trigger_signal(order_json["triggerSignal"])
+                if "triggerSignal" in order_json
+                else None,
+                last_update_time=order_json["lastUpdateTime"],
             )
 
             open_orders.append(order)
@@ -169,38 +153,25 @@ class KrakenFutureClient:
 
     def get_order_statuses(self, order_ids: list[str]) -> list[Order]:
         route = "/api/v3/orders/status"
-        data = {"orderIds": order_ids}
-        res = self._make_private_request(route, data=data)
 
-        open_orders_json = res["openOrders"]
+        data = {"orderIds": order_ids}
+        res = self._make_private_request("POST", route, data=data)
+        open_orders_json = res["orders"]
+
         open_orders = []
         for order_obj_json in open_orders_json:
             order_json = order_obj_json["order"]
-            status = str_to_order_status(order_obj_json["status"])
-
-            order_id = order_json["orderId"]
-            symbol = order_json["symbol"]
-            side = str_to_order_type(order_json["side"])
-            size = order_json["quantity"] if "quantity" in order_json else None
-            limit_price = (
-                order_json["limitPrice"] if "limitPrice" in order_json else None
-            )
-            filled_size = (
-                order_json["filledSize"] if "filledSize" in order_json else None
-            )
-            reduce_only = order_json["reduceOnly"]
-            last_update_time = order_json["lastUpdateTime"]
 
             order = Order(
-                symbol=symbol,
-                side=side,
-                size=size,
-                status=status,
-                limit_price=limit_price,
-                order_id=order_id,
-                filled_size=filled_size,
-                reduce_only=reduce_only,
-                last_update_time=last_update_time,
+                symbol=order_json["symbol"],
+                side=str_to_order_side(order_json["side"]),
+                size=order_json.get("quantity"),
+                status=str_to_order_status(order_obj_json["status"]),
+                limit_price=order_json.get("limitPrice"),
+                order_id=order_json["orderId"],
+                filled_size=order_json.get("filledSize"),
+                reduce_only=order_json["reduceOnly"],
+                last_update_time=order_json["lastUpdateTimestamp"],
             )
 
             open_orders.append(order)
@@ -412,9 +383,6 @@ class KrakenFutureClient:
             cancel_data.append(order_cancel_data)
 
         data["json"] = {"batchOrder": cancel_data}
-
-        print("HERE")
-        print(data)
 
         res = self._make_private_request("POST", route, data=data)
         batch_statuses = res["batchStatus"]

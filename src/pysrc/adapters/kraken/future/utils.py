@@ -77,7 +77,10 @@ def remove_empty_values(d: dict[str]) -> dict[str]:
         if isinstance(v, dict):
             cleaned[k] = remove_empty_values(v)
         elif isinstance(v, list):
-            cleaned[k] = [remove_empty_values(item) for item in v]
+            cleaned[k] = [
+                remove_empty_values(item) if isinstance(item, dict) else item
+                for item in v
+            ]
         else:
             cleaned[k] = v
 
@@ -89,7 +92,13 @@ def kraken_encode_dict(d: dict[str]) -> str:
 
     encoded_items = []
     for k, v in cleaned.items():
-        encoded_item = f"{k}={v}"
+        encoded_item = None
+
+        if isinstance(v, list):
+            encoded_item = f"{k}={','.join(v)}"
+        else:
+            encoded_item = f"{k}={v}"
+
         encoded_items.append(encoded_item)
 
     return "&".join(encoded_items)

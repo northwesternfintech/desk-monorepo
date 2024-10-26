@@ -78,6 +78,12 @@ def test_place_and_cancel(client) -> None:
 
     assert set(open_order_ids) == set(placed_order_ids)
 
+    # check some order info
+    for order in placed_orders:
+        order_status = client.get_order_statuses([order.order_id])
+        assert order_status[0].order_id == order.order_id
+        assert order_status[0].limit_price == order.limit_price
+
     # cancel one order
     order_to_cancel = placed_orders[0]
     res = client.cancel_order(order_to_cancel.order_id)
