@@ -110,9 +110,6 @@ class TradeHistoryType(Enum):
     TERMINATION = 4
     BLOCK = 5
 
-class TakerSide(Enum):
-    BUY = 1
-    SELL = 2
 
 class TradeHistory:
     def __init__(
@@ -121,7 +118,7 @@ class TradeHistory:
         price: float,
         time: str,
         trade_id: int,
-        side: Optional[TakerSide] = None,
+        side: Optional[OrderSide] = None,
         size: Optional[float] = None,
         historyType: Optional[TradeHistoryType] = None,
         uid: Optional[TradeHistoryType] = None,

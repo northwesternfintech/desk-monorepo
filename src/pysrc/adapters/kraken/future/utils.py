@@ -1,5 +1,5 @@
 import urllib
-from pysrc.adapters.kraken.future.containers import OrderStatus, OrderType, PositionSide, PriceUnit, TriggerSignal, TradeHistoryType, TradeHistory, TakerSide
+from pysrc.adapters.kraken.future.containers import OrderStatus, OrderType, PositionSide, PriceUnit, TriggerSignal, TradeHistoryType, TradeHistory
 from pysrc.util.types import OrderSide
 
 
@@ -68,19 +68,13 @@ def string_to_history_type(history_type: str) -> TradeHistoryType:
     except KeyError:
         return None
 
-def string_to_taker_side(side: str) -> TakerSide:
-    try:
-        return TakerSide[side.upper()]
-    except KeyError:
-        return None
-
 def serialize_history(symbol: str, hist: dict) -> TradeHistory:
     return TradeHistory(
         symbol = symbol,
         price = hist.get("price", 0),
         time = hist.get("time", ""),
         trade_id = hist.get("trade_id", 0),
-        side = string_to_taker_side(hist.get("side", "")),
+        side = str_to_order_side(hist.get("side", "")),
         size = hist.get("size"),
         historyType = string_to_history_type(hist.get("type", "")),
         uid = hist.get("uid"),

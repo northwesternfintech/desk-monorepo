@@ -10,8 +10,7 @@ import requests
 
 from pysrc.adapters.kraken.future.containers import (OpenPosition, Order,
                                                      OrderRequest, OrderStatus,
-                                                     TradeHistory, TradeHistoryType,
-                                                     TakerSide)
+                                                     TradeHistory, TradeHistoryType)
 from pysrc.adapters.kraken.future.utils import (order_side_to_str,
                                                 order_status_to_str,
                                                 order_type_to_str,

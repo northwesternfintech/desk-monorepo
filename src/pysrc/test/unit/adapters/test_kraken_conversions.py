@@ -1,11 +1,6 @@
 import pytest
-from pysrc.adapters.kraken.future.containers import TakerSide, TradeHistoryType, TradeHistory
-from pysrc.adapters.kraken.future.utils import string_to_taker_side, string_to_history_type
-
-def test_taker_side_conversion() -> None:
-    assert string_to_taker_side("buy") == TakerSide.BUY
-    assert string_to_taker_side("sell") == TakerSide.SELL
-    assert string_to_taker_side("john") == None
+from pysrc.adapters.kraken.future.containers import TradeHistoryType, TradeHistory
+from pysrc.adapters.kraken.future.utils import string_to_history_type
 
 def test_history_type_conversion() -> None:
     assert string_to_history_type("fill") == TradeHistoryType.FILL
