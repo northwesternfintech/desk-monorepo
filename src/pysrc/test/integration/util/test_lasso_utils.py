@@ -3,7 +3,7 @@ from pysrc.util.types import Asset
 from pysrc.util.lasso_utils import search_model_in_directory
 from pysrc.test.helpers import get_resources_path
 
-resource_path = get_resources_path(str(Path(__file__).parent))
+resource_path = get_resources_path(__file__)
 
 
 def test_check_lasso_models_positive() -> None:

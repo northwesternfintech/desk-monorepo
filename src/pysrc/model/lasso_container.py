@@ -1,11 +1,10 @@
-from abc import ABC
 from pathlib import Path
 from pysrc.util.types import Asset
 from pysrc.util.lasso_utils import asset_to_model_filename, search_model_in_directory
 from pysrc.util.pickle_utils import load_pickle
 
 
-class LassoContainer(ABC):
+class LassoContainer:
     def __init__(self, resource_path: Path, assets: list[Asset]) -> None:
         self.resource_path = resource_path
         self.models = {}

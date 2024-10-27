@@ -7,7 +7,7 @@ from pysrc.model.lasso_container import LassoContainer
 from pysrc.test.helpers import get_resources_path
 import pytest
 
-resource_path = get_resources_path(str(Path(__file__).parent))
+resource_path = get_resources_path(__file__)
 
 
 def test_lasso_container_failed_initialization() -> None:
