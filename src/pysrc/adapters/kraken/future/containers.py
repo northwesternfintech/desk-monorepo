@@ -1,6 +1,8 @@
+from collections.abc import Sequence
 from enum import Enum
 from typing import Optional
 
+from pysrc.util.exceptions import DIE
 from pysrc.util.types import OrderSide, PositionSide
 
 
@@ -103,8 +105,6 @@ class OpenPosition:
         self.price = price
         self.fill_time = fill_time
         self.size = size
-from pysrc.util.exceptions import DIE
-from collections.abc import Sequence
 
 
 def safe_at[T](lst: Sequence[T], idx: int) -> T:
