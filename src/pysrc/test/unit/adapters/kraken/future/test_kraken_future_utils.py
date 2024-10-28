@@ -13,7 +13,7 @@ from pysrc.adapters.kraken.future.utils import (
     order_type_to_str,
     position_side_to_str,
     price_unit_to_str,
-    remove_empty_values,
+    remove_empty_values_from_dict,
     str_to_order_side,
     str_to_order_status,
     str_to_order_type,
@@ -29,7 +29,7 @@ import pytest
 
 def test_remove_empty_values() -> None:
     d = {"a": 1, "b": None, "c": "", "d": 0}
-    assert remove_empty_values(d) == {"a": 1, "c": "", "d": 0}
+    assert remove_empty_values_from_dict(d) == {"a": 1, "c": "", "d": 0}
 
     e = {
         "a": 1,
@@ -39,7 +39,7 @@ def test_remove_empty_values() -> None:
         ],
         "c": 10,
     }
-    assert remove_empty_values(e) == {
+    assert remove_empty_values_from_dict(e) == {
         "a": 1,
         "b": [
             {"a": 1},
@@ -49,7 +49,7 @@ def test_remove_empty_values() -> None:
     }
 
     f = {"a": 1, "b": {"a": 1, "b": None}, "c": 10}
-    assert remove_empty_values(f) == {"a": 1, "b": {"a": 1}, "c": 10}
+    assert remove_empty_values_from_dict(f) == {"a": 1, "b": {"a": 1}, "c": 10}
 
 
 def test_kraken_encode_dict() -> None:

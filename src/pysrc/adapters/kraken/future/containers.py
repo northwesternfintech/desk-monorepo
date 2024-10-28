@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Optional
 
-from pysrc.util.types import OrderSide
+from pysrc.util.types import OrderSide, PositionSide
 
 
 class OrderType(Enum):
@@ -87,11 +87,6 @@ class OrderRequest:
         self.trailing_stop_deviation_unit = trailing_stop_deviation_unit
         self.limit_price_offset_value = limit_price_offset_value
         self.limit_price_offset_unit = limit_price_offset_unit
-
-
-class PositionSide(Enum):
-    LONG = 0
-    SHORT = 1
 
 
 class OpenPosition:
