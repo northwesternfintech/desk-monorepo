@@ -30,7 +30,7 @@ jobs:
         version: 3.x
 
     - name: Install poetry dependencies
-      run: task install
+      run: make install
 
     - name: Run ruff and mypy
-      run: task lint
+      run: make lint
