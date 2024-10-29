@@ -10,7 +10,9 @@ from pysrc.adapters.kraken.future.containers import (
     Order,
     OrderRequest,
     OrderStatus,
+    TradeHistory,
 )
+
 from pysrc.adapters.kraken.future.utils import (
     order_side_to_str,
     order_status_to_str,
@@ -23,7 +25,11 @@ from pysrc.adapters.kraken.future.utils import (
     str_to_trigger_signal,
     trigger_signal_to_str,
     kraken_encode_dict,
+    serialize_history,
 )
+
+from pysrc.adapters.messages import SnapshotMessage
+from pysrc.util.types import Market
 
 FUTURES_API_LIVE_BASE_URL = "https://futures.kraken.com/derivatives"
 FUTURES_API_TESTNET_BASE_URL = "https://demo-futures.kraken.com/derivatives"
@@ -43,6 +49,7 @@ class KrakenFutureClient:
         self._private_key = private_key
 
         self._private_session = requests.Session()
+        self._public_session = requests.Session()
 
     def _calculate_authent(self, encoded_data: str, api_route: str) -> str:
         msg = encoded_data + api_route
@@ -90,6 +97,55 @@ class KrakenFutureClient:
             raise ValueError(f"Route {api_route} failed with error '{err}'")
 
         return res
+
+    def _make_public_request(
+        self, request_type: str, api_route: str, params: dict[str, Any] = {}
+    ) -> dict:
+        url = self._base_url + api_route
+
+        res = {}
+        match request_type:
+            case "POST":
+                res = self._public_session.post(url, params=params).json()
+            case "GET":
+                res = self._public_session.get(url, params=params).json()
+            case _:
+                raise ValueError(f"Unknown request type '{request_type}'")
+
+        if res["result"] == "error":
+            err = None
+            if "errors" in res:
+                err = res["errors"]
+            elif "error" in res:
+                err = res["error"]
+            else:
+                err = "Unknown error"
+
+            raise ValueError(f"Route {api_route} failed with error '{err}'")
+
+        return res
+
+    def get_history(
+        self, symbol: str, last_time: Optional[int] = None
+    ) -> list[TradeHistory]:
+        route = "/api/v3/history"
+        params = {"symbol": symbol, "lastTime": last_time}
+
+        response = self._make_public_request("GET", route, params=params)
+
+        return list(map(lambda x: serialize_history(symbol, x), response["history"]))
+
+    def get_orderbook(self, symbol: str) -> SnapshotMessage:
+        route = "/api/v3/orderbook"
+        params = {"symbol": symbol}
+
+        response = self._make_public_request("GET", route, params=params)
+
+        time = response["serverTime"]
+        asks = response["orderBook"]["asks"]
+        bids = response["orderBook"]["bids"]
+
+        return SnapshotMessage(time, symbol, bids, asks, Market.KRAKEN_USD_FUTURE)
 
     def get_open_positions(self) -> list[OpenPosition]:
         route = "/api/v3/openpositions"

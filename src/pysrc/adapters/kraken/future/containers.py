@@ -107,6 +107,58 @@ class OpenPosition:
         self.size = size
 
 
+class TradeHistoryType(Enum):
+    FILL = 1
+    LIQUIDATION = 2
+    ASSIGNMENT = 3
+    TERMINATION = 4
+    BLOCK = 5
+
+
+class TradeHistory:
+    def __init__(
+        self,
+        symbol: str,
+        price: float,
+        time: str,
+        trade_id: int,
+        side: Optional[OrderSide] = None,
+        size: Optional[float] = None,
+        historyType: Optional[TradeHistoryType] = None,
+        uid: Optional[TradeHistoryType] = None,
+        instrument_identification_type: Optional[str] = None,
+        isin: Optional[str] = None,
+        execution_venue: Optional[str] = None,
+        price_notation: Optional[str] = None,
+        price_currency: Optional[str] = None,
+        notional_amount: Optional[float] = None,
+        notional_currency: Optional[str] = None,
+        publication_time: Optional[str] = None,
+        publication_venue: Optional[str] = None,
+        transaction_identification_code: Optional[str] = None,
+        to_be_cleared: Optional[bool] = None,
+    ):
+        self.symbol = symbol
+        self.price = price
+        self.side = side
+        self.size = size
+        self.time = time
+        self.trade_id = trade_id
+        self.type = historyType
+        self.uid = uid
+        self.instrument_identification_type = instrument_identification_type
+        self.isin = isin
+        self.execution_venue = execution_venue
+        self.price_notation = price_notation
+        self.price_currency = price_currency
+        self.notional_amount = notional_amount
+        self.notional_currency = notional_currency
+        self.publication_time = publication_time
+        self.publication_venue = publication_venue
+        self.transaction_identification_code = transaction_identification_code
+        self.to_be_cleared = to_be_cleared
+
+
 def safe_at[T](lst: Sequence[T], idx: int) -> T:
     if (idx < 0 and abs(idx) > len(lst)) or (idx >= 0 and idx >= len(lst)):
         return DIE("Safe at failed due to index out of bounds")

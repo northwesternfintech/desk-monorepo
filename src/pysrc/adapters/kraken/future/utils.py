@@ -6,6 +6,8 @@ from pysrc.adapters.kraken.future.containers import (
     PositionSide,
     PriceUnit,
     TriggerSignal,
+    TradeHistoryType,
+    TradeHistory,
 )
 from pysrc.util.types import OrderSide
 
@@ -102,3 +104,31 @@ def kraken_encode_dict(d: dict[str, Any]) -> str:
         encoded_items.append(encoded_item)
 
     return "&".join(encoded_items)
+
+
+def string_to_history_type(history_type: str) -> TradeHistoryType:
+    return TradeHistoryType[history_type.upper()]
+
+
+def serialize_history(symbol: str, hist: dict) -> TradeHistory:
+    return TradeHistory(
+        symbol=symbol,
+        price=hist.get("price", 0),
+        time=hist.get("time", ""),
+        trade_id=hist.get("trade_id", 0),
+        side=str_to_order_side(hist.get("side", "")),
+        size=hist.get("size"),
+        historyType=string_to_history_type(hist.get("type", "")),
+        uid=hist.get("uid"),
+        instrument_identification_type=hist.get("instrument_identification_type"),
+        isin=hist.get("isin"),
+        execution_venue=hist.get("execution_venue"),
+        price_notation=hist.get("price_notation"),
+        price_currency=hist.get("price_currency"),
+        notional_amount=hist.get("notional_amount"),
+        notional_currency=hist.get("notional_currency"),
+        publication_time=hist.get("publication_time"),
+        publication_venue=hist.get("publication_venue"),
+        transaction_identification_code=hist.get("transaction_identification_code"),
+        to_be_cleared=hist.get("to_be_cleared"),
+    )
