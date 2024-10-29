@@ -139,7 +139,7 @@ class TradeHistory:
         publication_time: Optional[str] = None,
         publication_venue: Optional[str] = None,
         transaction_identification_code: Optional[str] = None,
-        to_be_cleared: Optional[bool] = None
+        to_be_cleared: Optional[bool] = None,
     ):
         self.symbol = symbol
         self.price = price

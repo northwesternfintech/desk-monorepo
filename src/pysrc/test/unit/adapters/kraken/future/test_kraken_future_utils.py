@@ -5,6 +5,8 @@ from pysrc.adapters.kraken.future.containers import (
     PositionSide,
     PriceUnit,
     TriggerSignal,
+    TradeHistoryType,
+    TradeHistory,
 )
 from pysrc.adapters.kraken.future.utils import (
     kraken_encode_dict,
@@ -21,6 +23,7 @@ from pysrc.adapters.kraken.future.utils import (
     str_to_price_unit,
     str_to_trigger_signal,
     trigger_signal_to_str,
+    string_to_history_type,
 )
 from pysrc.util.types import OrderSide
 
@@ -110,3 +113,13 @@ def test_price_unit_conversion() -> None:
 
     with pytest.raises(Exception):
         str_to_price_unit("")
+
+
+def test_history_type_conversion() -> None:
+    assert string_to_history_type("fill") == TradeHistoryType.FILL
+    assert string_to_history_type("liquidation") == TradeHistoryType.LIQUIDATION
+    assert string_to_history_type("assignment") == TradeHistoryType.ASSIGNMENT
+    assert string_to_history_type("termination") == TradeHistoryType.TERMINATION
+    assert string_to_history_type("block") == TradeHistoryType.BLOCK
+    with pytest.raises(KeyError):
+        string_to_history_type("john") is None

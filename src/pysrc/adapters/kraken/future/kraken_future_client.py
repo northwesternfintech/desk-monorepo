@@ -10,8 +10,7 @@ from pysrc.adapters.kraken.future.containers import (
     Order,
     OrderRequest,
     OrderStatus,
-    TradeHistory, 
-    TradeHistoryType
+    TradeHistory,
 )
 
 from pysrc.adapters.kraken.future.utils import (
@@ -26,7 +25,7 @@ from pysrc.adapters.kraken.future.utils import (
     str_to_trigger_signal,
     trigger_signal_to_str,
     kraken_encode_dict,
-    serialize_history
+    serialize_history,
 )
 
 from pysrc.adapters.messages import SnapshotMessage
@@ -99,10 +98,12 @@ class KrakenFutureClient:
 
         return res
 
-    def _make_public_request(self, request_type: str, api_route: str, params: dict[str] = {}) -> dict:
+    def _make_public_request(
+        self, request_type: str, api_route: str, params: dict[str, Any] = {}
+    ) -> dict:
         url = self._base_url + api_route
 
-        res = None
+        res = {}
         match request_type:
             case "POST":
                 res = self._public_session.post(url, params=params).json()
@@ -110,7 +111,7 @@ class KrakenFutureClient:
                 res = self._public_session.get(url, params=params).json()
             case _:
                 raise ValueError(f"Unknown request type '{request_type}'")
-        
+
         if res["result"] == "error":
             err = None
             if "errors" in res:
@@ -121,30 +122,24 @@ class KrakenFutureClient:
                 err = "Unknown error"
 
             raise ValueError(f"Route {api_route} failed with error '{err}'")
-        
+
         return res
 
     def get_history(self, symbol: str, lastTime: int = 0) -> list[TradeHistory]:
-
-        params = {
-            "symbol": symbol
-        }
+        route = "/api/v3/history"
+        params = {"symbol": symbol}
         if lastTime > 0:
-            params["lastTime"] = lastTime
+            params["lastTime"] = str(lastTime)
 
-        response = self._make_public_request("GET", "/history", params = params)
+        response = self._make_public_request("GET", route, params=params)
 
-        return list(map(
-            lambda x: serialize_history(symbol, x),
-            response["history"]
-        ))
+        return list(map(lambda x: serialize_history(symbol, x), response["history"]))
 
     def get_orderbook(self, symbol: str) -> SnapshotMessage:
-        params = {
-            "symbol": symbol
-        }
+        route = "/api/v3/orderbook"
+        params = {"symbol": symbol}
 
-        response = self._make_public_request("GET", "/orderbook", params = params)
+        response = self._make_public_request("GET", route, params=params)
 
         time = response["serverTime"]
         asks = response["orderBook"]["asks"]
