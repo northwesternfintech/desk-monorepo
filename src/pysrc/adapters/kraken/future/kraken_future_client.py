@@ -125,11 +125,11 @@ class KrakenFutureClient:
 
         return res
 
-    def get_history(self, symbol: str, lastTime: int = 0) -> list[TradeHistory]:
+    def get_history(
+        self, symbol: str, last_time: Optional[int] = None
+    ) -> list[TradeHistory]:
         route = "/api/v3/history"
-        params = {"symbol": symbol}
-        if lastTime > 0:
-            params["lastTime"] = str(lastTime)
+        params = {"symbol": symbol, "lastTime": last_time}
 
         response = self._make_public_request("GET", route, params=params)
 
