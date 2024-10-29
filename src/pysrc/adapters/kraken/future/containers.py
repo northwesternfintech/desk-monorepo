@@ -1,7 +1,9 @@
+from collections.abc import Sequence
 from enum import Enum
 from typing import Optional
 
-from pysrc.util.types import OrderSide
+from pysrc.util.exceptions import DIE
+from pysrc.util.types import OrderSide, PositionSide
 
 
 class OrderType(Enum):
@@ -89,11 +91,6 @@ class OrderRequest:
         self.limit_price_offset_unit = limit_price_offset_unit
 
 
-class PositionSide(Enum):
-    LONG = 0
-    SHORT = 1
-
-
 class OpenPosition:
     def __init__(
         self,
@@ -160,3 +157,15 @@ class TradeHistory:
         self.publication_venue = publication_venue
         self.transaction_identification_code = transaction_identification_code
         self.to_be_cleared = to_be_cleared
+
+
+def safe_at[T](lst: Sequence[T], idx: int) -> T:
+    if (idx < 0 and abs(idx) > len(lst)) or (idx >= 0 and idx >= len(lst)):
+        return DIE("Safe at failed due to index out of bounds")
+    return lst[idx]
+
+
+def get_single[T](single_list: Sequence[T]) -> T:
+    if len(single_list) != 1:
+        return DIE("Get single failed due to list not having exactly one element")
+    return single_list[0]

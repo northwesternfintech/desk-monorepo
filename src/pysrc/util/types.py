@@ -11,6 +11,11 @@ class OrderSide(Enum):
     ASK = 2
 
 
+class PositionSide(Enum):
+    LONG = 0
+    SHORT = 1
+
+
 class Market(Enum):
     KRAKEN_SPOT = 1
     KRAKEN_USD_FUTURE = 2

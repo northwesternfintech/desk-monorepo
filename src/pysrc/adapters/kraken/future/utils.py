@@ -70,17 +70,17 @@ def price_unit_to_str(p: PriceUnit) -> str:
     return p.name.lower()
 
 
-def remove_empty_values(d: dict[str, Any]) -> dict[str, Any]:
+def remove_empty_values_from_dict(d: dict[str, Any]) -> dict[str, Any]:
     cleaned: dict[str, Any] = {}
     for k, v in d.items():
         if v is None:
             continue
 
         if isinstance(v, dict):
-            cleaned[k] = remove_empty_values(v)
+            cleaned[k] = remove_empty_values_from_dict(v)
         elif isinstance(v, list):
             cleaned[k] = [
-                remove_empty_values(item) if isinstance(item, dict) else item
+                remove_empty_values_from_dict(item) if isinstance(item, dict) else item
                 for item in v
             ]
         else:
@@ -90,7 +90,7 @@ def remove_empty_values(d: dict[str, Any]) -> dict[str, Any]:
 
 
 def kraken_encode_dict(d: dict[str, Any]) -> str:
-    cleaned = remove_empty_values(d)
+    cleaned = remove_empty_values_from_dict(d)
 
     encoded_items = []
     for k, v in cleaned.items():
