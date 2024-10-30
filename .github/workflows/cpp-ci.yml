@@ -1,0 +1,123 @@
+name: C++ - Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+
+    - uses: actions/setup-python@v4
+      with: { python-version: "3.12" }
+
+    - name: Install LLVM 18
+      run: |
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo apt-add-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
+          sudo apt update
+          sudo apt install llvm-18 llvm-18-dev llvm-18-tools clang-18 clang-tidy-18 clang-format-18 clang-tools-18 libclang-18-dev -y
+
+    - name: Install codespell
+      run: pip3 install codespell
+
+    - name: Lint
+      run: cmake -D FORMAT_COMMAND=clang-format-18 -P cmake/lint.cmake
+
+    - name: Spell check
+      run: cmake -P cmake/spell.cmake
+
+  test:
+    needs: [lint]
+
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
+
+    runs-on: ${{ matrix.os }}
+
+
+    env:
+      CC: clang-18
+      CXX: clang++-18
+      CLANG_DIR: '/usr/lib/llvm-18/lib/cmake/clang'
+      LLVM_DIR: '/usr/lib/llvm-18/lib/cmake/llvm'
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+
+    - name: Install LLVM 18
+      run: |
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo apt-add-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
+          sudo apt update
+          sudo apt install llvm-18 llvm-18-dev llvm-18-tools clang-18 clang-tidy-18 clang-tools-18 libclang-18-dev -y
+
+    - name: Install static analyzers
+      if: matrix.os == 'ubuntu-22.04'
+      run: >-
+        sudo apt install cppcheck -y -q
+
+        sudo update-alternatives --install
+        /usr/bin/clang-tidy clang-tidy
+        /usr/bin/clang-tidy-18 160
+
+    - name: Install Python
+      uses: actions/setup-python@v4
+      with: { python-version: "3.12" }
+        
+    - name: Install Python Dev
+      uses: actions/setup-python@v4
+      with: { python-version: "3.12-dev" }
+
+    - name: Install Cache Conan dependencies
+      id: cache-conan
+      uses: actions/cache@v3
+      env:
+        cache-name: cache-conan-deps
+      with:
+        path: ~/.conan2
+        key: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ hashFiles('conanfile.py') }}
+        restore-keys: ${{ runner.os }}-builder-${{ env.cache-name }}-
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        pip3 install conan numpy
+        
+        sudo apt install libssl-dev -y
+        
+        bash < .github/scripts/conan-profile.sh
+        conan install . -s build_type=Release -b missing
+
+    - name: Setup MultiToolTask
+      if: matrix.os == 'windows-2022'
+      run: |
+        Add-Content "$env:GITHUB_ENV" 'UseMultiToolTask=true'
+        Add-Content "$env:GITHUB_ENV" 'EnforceProcessCountAcrossBuilds=true'
+
+    - name: Configure
+      shell: pwsh
+      run: cmake "--preset=ci-$("${{ matrix.os }}".split("-")[0])"
+
+    - name: Build
+      run: cmake --build build --config Release -j
+
+    - name: Install
+      run: cmake --install build --config Release --prefix prefix
+
+    - name: Test
+      working-directory: build
+      run: ctest --output-on-failure --no-tests=error -C Release -j 2

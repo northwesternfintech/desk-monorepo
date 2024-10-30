@@ -1,26 +1,40 @@
-.PHONY: install test ci lint format unit integration
+.PHONY: py-install py-test py-ci py-lint py-format py-unit py-integration cpp-deps cpp-init cpp-build
 
-install:
+py-install:
 	poetry lock --no-update
 	poetry install
 	poetry env use python3.12
 
-test: lint unit
+py-test: lint unit
 
-ci: test integration
+py-ci: test integration
 
-lint:
+py-lint:
 	poetry run mypy .
 	poetry run ruff check .
 	poetry run ruff format --check
 
-format:
+py-format:
 	poetry run ruff format
 	poetry run ruff check --fix
 
-unit:
+py-unit:
 	poetry run pytest src/pysrc/test/unit
 
-integration:
+py-integration:
 	poetry run pytest src/pysrc/test/integration
 
+cpp-deps:
+	conan install . -s build_type=Debug -b missing -pr cpp23 -pr:b cpp23
+
+cpp-init:
+	cmake --preset=dev
+
+cpp-build:
+	cmake --build --preset=dev -j
+
+cpp-test:
+	ctest --preset=dev --timeout 1
+
+cpp-fmt:
+	cmake -D FIX=YES -P cmake/lint.cmake

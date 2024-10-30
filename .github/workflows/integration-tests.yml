@@ -30,9 +30,9 @@ jobs:
         version: 3.x
 
     - name: Install poetry dependencies
-      run: make install
+      run: make py-install
     
     - name: Run integration tests
       env:
           DESK_BOT_TOKEN: ${{ secrets.DESK_BOT_TOKEN }}
-      run: make integration
+      run: make py-integration

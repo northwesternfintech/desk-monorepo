@@ -11,7 +11,7 @@ resource_path = get_resources_path(__file__)
 
 
 def test_lasso_container_failed_initialization() -> None:
-    error_msg = "LassoContainer initialized without an instantiated model for one ore more assets"
+    error_msg = "LassoContainer initialized without an instantiated model for one or more assets"
 
     with pytest.raises(AssertionError) as excinfo:
         LassoContainer(resource_path, [Asset.ADA])

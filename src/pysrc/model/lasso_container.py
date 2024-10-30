@@ -11,7 +11,7 @@ class LassoContainer:
         for asset in assets:
             if not search_model_in_directory(resource_path, [asset]):
                 raise AssertionError(
-                    "LassoContainer initialized without an instantiated model for one ore more assets"
+                    "LassoContainer initialized without an instantiated model for one or more assets"
                 )
             model = load_pickle(resource_path.joinpath(asset_to_model_filename(asset)))
             self.models[asset] = model

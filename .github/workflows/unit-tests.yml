@@ -30,7 +30,7 @@ jobs:
         version: 3.x
 
     - name: Install poetry dependencies
-      run: make install
+      run: make py-install
     
     - name: Run unit tests
-      run: make unit
+      run: make py-unit
