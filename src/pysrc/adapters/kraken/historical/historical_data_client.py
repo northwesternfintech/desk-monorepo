@@ -168,7 +168,7 @@ class HistoricalDataClient:
         return new_file_path
 
 
-    def to_trades(
+    def get_trades_from_file(
             self,
             file_path: str
     ) -> list[TradeMessage]:
@@ -191,6 +191,19 @@ class HistoricalDataClient:
             trades.append(trade)
 
         return trades
+    
+    def get_trades(
+            self,
+            asset: str,
+            date: datetime,
+            resource_path: str
+    ) -> list[TradeMessage]:
+        file_path = os.path.join(resource_path, asset, date.strftime("%m_%d_%Y") + ".bin")
+
+        if not os.path.exists(file_path):
+            return []
+        
+        return self.get_trades_from_file(file_path)
 
     def download(
             self,
