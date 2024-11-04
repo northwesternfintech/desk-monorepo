@@ -18,6 +18,7 @@ requests = "^2.28.0"
 types-requests = "^2.28.0" 
 scikit-learn = "^1.5.2"
 numpy = "^2.1.2"
+pyzstd = "^0.16.2"
 
 [build-system]
 requires = ["poetry-core"]

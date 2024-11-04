@@ -1,3 +1,5 @@
+import concurrent.futures
+import multiprocessing as mp
 import os
 import shutil
 import zipfile
@@ -7,6 +9,7 @@ from typing import Optional
 
 import numpy as np
 import requests
+from pyzstd import CParameter, compress, decompress
 
 from pysrc.adapters.messages import TradeMessage
 from pysrc.util.types import Market, OrderSide
@@ -15,10 +18,17 @@ HISTORICAL_DRIVE_FOLDER_ID = "188O9xQjZTythjyLNes_5zfMEFaMbTT22"
 
 
 class HistoricalDataClient:
-    def __init__(self, drive_api_key: Optional[str] = None):
+    def __init__(
+        self, drive_api_key: Optional[str] = None, max_cores: int = 8
+    ):
         self._drive_api_key = drive_api_key
 
+        self._max_cores = max_cores
+        if self._max_cores <= 0:
+            raise ValueError(f"Max cores must be positive (got '{self._max_cores}')")
+
         self._np_dtype = [("time", "u8"), ("price", "f4"), ("volume", "f4")]
+        self._zstd_options = {CParameter.compressionLevel: 10}
 
     def _list_drive_files(self, folder_id: str) -> list[tuple[str, str]]:
         url = "https://www.googleapis.com/drive/v3/files/"
@@ -37,7 +47,6 @@ class HistoricalDataClient:
         for f in res.json().get("files", []):
             file_name, file_id = f["name"], f["id"]
             files.append((file_name, file_id))
-            break
 
         return files
 
@@ -59,11 +68,20 @@ class HistoricalDataClient:
         self, download_path: str, drive_folder_id: str
     ) -> list[str]:
         downloaded_zip_paths = []
+        tasks = []
         for file_name, file_id in self._list_drive_files(drive_folder_id):
             download_file_path = os.path.join(download_path, file_name)
-            self._download_drive_file(file_id, download_file_path)
-
             downloaded_zip_paths.append(download_file_path)
+            tasks.append((file_id, download_file_path))
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(tasks)) as executor:
+            futures = [
+                executor.submit(self._download_drive_file, file_id, download_path)
+                for file_id, download_path in tasks
+            ]
+
+            for future in futures:
+                future.result()
 
         dir_paths = []
         for zip_file_path in downloaded_zip_paths:
@@ -75,6 +93,8 @@ class HistoricalDataClient:
 
             os.remove(zip_file_path)
             dir_paths.append(dir_path)
+
+        dir_paths.sort()
 
         pairs_to_file_paths = defaultdict(list)
         for path in dir_paths:
@@ -104,59 +124,77 @@ class HistoricalDataClient:
         dir_path = os.path.dirname(csv_path)
         chunk_file_paths: list[str] = []
 
-        lines = []
         with open(csv_path) as f:
+            line = f.readline()
+
+            if not line:
+                return chunk_file_paths
+
+            inital_time, _, _ = line.split(",")
+            current_date = datetime.fromtimestamp(int(inital_time), tz=timezone.utc)
+            current_eod = int(
+                datetime(
+                    current_date.year, current_date.month, current_date.day, 23, 59, 59
+                ).timestamp()
+            )
+
+            chunk_file_path = os.path.join(
+                dir_path, current_date.strftime("%m_%d_%Y") + ".csv"
+            )
+            chunk_file_paths.append(chunk_file_path)
+
+            chunk_file = open(chunk_file_path, "w")
+            chunk_file.write(line)
+
             for line in f.readlines():
-                lines.append(line)
+                line_time, _, _ = line.split(",")
 
-        if not lines:
-            return chunk_file_paths
+                if int(line_time) <= current_eod:
+                    chunk_file.write(line)
+                else:
+                    current_date = datetime.fromtimestamp(
+                        int(line_time), tz=timezone.utc
+                    )
+                    current_eod = int(
+                        datetime(
+                            current_date.year,
+                            current_date.month,
+                            current_date.day,
+                            23,
+                            59,
+                            59,
+                        ).timestamp()
+                    )
+                    chunk_file.close()
 
-        lines.sort(key=lambda x: x.split(",")[0])
+                    chunk_file_path = os.path.join(
+                        dir_path, current_date.strftime("%m_%d_%Y") + ".csv"
+                    )
+                    chunk_file_paths.append(chunk_file_path)
 
-        first_line = lines[0]
-        inital_time, _, _ = first_line.split(",")
-        current_date = datetime.fromtimestamp(int(inital_time), tz=timezone.utc)
-
-        chunk_file_path = os.path.join(
-            dir_path, current_date.strftime("%m_%d_%Y") + ".csv"
-        )
-        chunk_file_paths.append(chunk_file_path)
-
-        chunk_file = open(chunk_file_path, "w")
-        chunk_file.write(first_line)
-
-        for i in range(1, len(lines)):
-            line = lines[i]
-            line_time, _, _ = line.split(",")
-            line_date = datetime.fromtimestamp(int(line_time), tz=timezone.utc)
-
-            if line_date.date() == current_date.date():
-                chunk_file.write(line)
-            else:
-                current_date = line_date
-                chunk_file.close()
-
-                chunk_file_path = os.path.join(
-                    dir_path, current_date.strftime("%m_%d_%Y") + ".csv"
-                )
-                chunk_file_paths.append(chunk_file_path)
-
-                chunk_file = open(chunk_file_path, "w")
-                chunk_file.write(line)
+                    chunk_file = open(chunk_file_path, "w")
+                    chunk_file.write(line)
 
         chunk_file.close()
         return chunk_file_paths
+
+    def _compress(self, data: bytes, output_path: str) -> None:
+        with open(output_path, "wb") as f:
+            f.write(compress(data, level_or_option=self._zstd_options))
 
     def _serialize_csv(self, csv_path: str) -> str:
         arr = np.loadtxt(csv_path, delimiter=",", dtype=self._np_dtype)
 
         new_file_path = os.path.splitext(csv_path)[0] + ".bin"
-        arr.tofile(new_file_path)
+        self._compress(arr.tobytes(), new_file_path)
         return new_file_path
 
+    def _decompress(self, input_path: str) -> bytes:
+        with open(input_path, "rb") as f:
+            return decompress(f.read())
+
     def get_trades_from_file(self, file_path: str) -> list[TradeMessage]:
-        arr = np.fromfile(file_path, dtype=self._np_dtype)
+        arr = np.frombuffer(self._decompress(file_path), dtype=self._np_dtype)
         pair = os.path.basename(os.path.dirname(file_path))
 
         trades = []
@@ -192,13 +230,20 @@ class HistoricalDataClient:
             raise ValueError(f"Download path '{download_path}' does not exist")
 
         pair_dir_paths = self._download_data_from_drive(download_path, drive_folder_id)
+
+        pair_csv_files = []
         for dir_path in pair_dir_paths:
             pair = os.path.basename(dir_path)
-            pair_csv_file = os.path.join(dir_path, pair + ".csv")
+            pair_csv_files.append(os.path.join(dir_path, pair + ".csv"))
 
-            chunked_csv_files = self._chunk_csv_by_day(pair_csv_file)
-            os.remove(pair_csv_file)
+        chunked_csv_files = []
+        with mp.Pool(self._max_cores) as pool:
+            for files in pool.imap(
+                self._chunk_csv_by_day, pair_csv_files, chunksize=16
+            ):
+                chunked_csv_files.extend(files)
 
-            for chunked_file in chunked_csv_files:
-                self._serialize_csv(chunked_file)
-                os.remove(chunked_file)
+            (_ for _ in pool.imap(self._serialize_csv, chunked_csv_files, chunksize=16))
+
+        for file_path in pair_csv_files + chunked_csv_files:
+            os.remove(file_path)
