@@ -67,18 +67,14 @@ class HistoricalDataClient:
     def _download_data_from_drive(
         self, download_path: str, drive_folder_id: str
     ) -> list[str]:
+        drive_files = self._list_drive_files(drive_folder_id)
         downloaded_zip_paths = []
-        tasks = []
-        for file_name, file_id in self._list_drive_files(drive_folder_id):
-            download_file_path = os.path.join(download_path, file_name)
-            downloaded_zip_paths.append(download_file_path)
-            tasks.append((file_id, download_file_path))
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(tasks)) as executor:
-            futures = [
-                executor.submit(self._download_drive_file, file_id, download_path)
-                for file_id, download_path in tasks
-            ]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(drive_files)) as executor:
+            futures = []
+            for file_name, file_id in drive_files:
+                download_file_path = os.path.join(download_path, file_name)
+                downloaded_zip_paths.append(download_file_path)
+                executor.submit(self._download_data_from_drive, file_id, download_file_path)
 
             for future in futures:
                 future.result()
@@ -152,6 +148,8 @@ class HistoricalDataClient:
                 if int(line_time) <= current_eod:
                     chunk_file.write(line)
                 else:
+                    chunk_file.close()
+                    
                     current_date = datetime.fromtimestamp(
                         int(line_time), tz=timezone.utc
                     )
@@ -165,7 +163,6 @@ class HistoricalDataClient:
                             59,
                         ).timestamp()
                     )
-                    chunk_file.close()
 
                     chunk_file_path = os.path.join(
                         dir_path, current_date.strftime("%m_%d_%Y") + ".csv"
