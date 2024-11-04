@@ -18,10 +18,8 @@ HISTORICAL_DRIVE_FOLDER_ID = "188O9xQjZTythjyLNes_5zfMEFaMbTT22"
 
 
 class HistoricalDataClient:
-    def __init__(
-        self, drive_api_key: Optional[str] = None, max_cores: int = 8
-    ):
-        self._drive_api_key = drive_api_key
+    def __init__(self, drive_auth_token: Optional[str] = None, max_cores: int = 8):
+        self._drive_auth_token = drive_auth_token
 
         self._max_cores = max_cores
         if self._max_cores <= 0:
@@ -37,7 +35,7 @@ class HistoricalDataClient:
             "fields": "files(id, name)",
         }
 
-        headers = {"Authorization": f"Bearer {self._drive_api_key}"}
+        headers = {"Authorization": f"Bearer {self._drive_auth_token}"}
 
         res = requests.get(url, headers=headers, params=params)
         if res.status_code != 200:
@@ -53,7 +51,7 @@ class HistoricalDataClient:
     def _download_drive_file(self, file_id: str, download_path: str) -> None:
         url = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media&acknowledgeAbuse=true"
 
-        headers = {"Authorization": f"Bearer {self._drive_api_key}"}
+        headers = {"Authorization": f"Bearer {self._drive_auth_token}"}
 
         res = requests.get(url, headers=headers, stream=True)
 
@@ -68,13 +66,20 @@ class HistoricalDataClient:
         self, download_path: str, drive_folder_id: str
     ) -> list[str]:
         drive_files = self._list_drive_files(drive_folder_id)
+
         downloaded_zip_paths = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(drive_files)) as executor:
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=len(drive_files)
+        ) as executor:
             futures = []
-            for file_name, file_id in drive_files:
+            for file_name, file_id in self._list_drive_files(drive_folder_id):
                 download_file_path = os.path.join(download_path, file_name)
                 downloaded_zip_paths.append(download_file_path)
-                executor.submit(self._download_data_from_drive, file_id, download_file_path)
+
+                f = executor.submit(
+                    self._download_drive_file, file_id, download_file_path
+                )
+                futures.append(f)
 
             for future in futures:
                 future.result()
@@ -148,8 +153,6 @@ class HistoricalDataClient:
                 if int(line_time) <= current_eod:
                     chunk_file.write(line)
                 else:
-                    chunk_file.close()
-                    
                     current_date = datetime.fromtimestamp(
                         int(line_time), tz=timezone.utc
                     )
@@ -163,6 +166,7 @@ class HistoricalDataClient:
                             59,
                         ).timestamp()
                     )
+                    chunk_file.close()
 
                     chunk_file_path = os.path.join(
                         dir_path, current_date.strftime("%m_%d_%Y") + ".csv"
@@ -220,7 +224,7 @@ class HistoricalDataClient:
     def download(
         self, download_path: str, drive_folder_id: str = HISTORICAL_DRIVE_FOLDER_ID
     ) -> None:
-        if not self._drive_api_key:
+        if not self._drive_auth_token:
             raise ValueError("Missing API key to access drive")
 
         if not os.path.exists(download_path):
@@ -240,7 +244,7 @@ class HistoricalDataClient:
             ):
                 chunked_csv_files.extend(files)
 
-            (_ for _ in pool.imap(self._serialize_csv, chunked_csv_files, chunksize=16))
+            pool.map(self._serialize_csv, chunked_csv_files, chunksize=16)
 
         for file_path in pair_csv_files + chunked_csv_files:
             os.remove(file_path)
