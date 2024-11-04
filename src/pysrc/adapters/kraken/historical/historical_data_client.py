@@ -76,10 +76,10 @@ class HistoricalDataClient:
                 download_file_path = os.path.join(download_path, file_name)
                 downloaded_zip_paths.append(download_file_path)
 
-                f = executor.submit(
+                future = executor.submit(
                     self._download_drive_file, file_id, download_file_path
                 )
-                futures.append(f)
+                futures.append(future)
 
             for future in futures:
                 future.result()
