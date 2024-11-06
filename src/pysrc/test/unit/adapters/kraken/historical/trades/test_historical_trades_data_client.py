@@ -1,6 +1,8 @@
 from datetime import datetime
 import os
-from pysrc.adapters.kraken.historical.trades.historical_trades_data_client import HistoricalTradesDataClient
+from pysrc.adapters.kraken.historical.trades.historical_trades_data_client import (
+    HistoricalTradesDataClient,
+)
 from pysrc.test.helpers import get_resources_path
 import numpy as np
 from pysrc.util.types import Market
