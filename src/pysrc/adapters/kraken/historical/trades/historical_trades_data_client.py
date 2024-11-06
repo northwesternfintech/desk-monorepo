@@ -17,7 +17,7 @@ from pysrc.util.types import Market, OrderSide
 HISTORICAL_DRIVE_FOLDER_ID = "188O9xQjZTythjyLNes_5zfMEFaMbTT22"
 
 
-class HistoricalDataClient:
+class HistoricalTradesDataClient:
     def __init__(self, drive_auth_token: Optional[str] = None, max_cores: int = 8):
         self._drive_auth_token = drive_auth_token
 
