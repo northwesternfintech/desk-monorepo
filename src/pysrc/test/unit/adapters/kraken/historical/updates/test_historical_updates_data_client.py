@@ -1,5 +1,5 @@
 from unittest.mock import MagicMock, patch
-from pysrc.adapters.kraken.historical.updates.containers import OrderEventType
+from pysrc.adapters.kraken.historical.updates.containers import UpdateDelta
 from pysrc.adapters.kraken.historical.updates.historical_updates_data_client import (
     HistoricalUpdatesDataClient,
 )
@@ -24,7 +24,7 @@ def test_get_order_events(
                 "event": {
                     "OrderPlaced": {
                         "order": {
-                            "direction": "Buy",
+                            "direction": "Sell",
                             "lastUpdateTimestamp": 1604937694000,
                             "limitPrice": "1234.56789",
                             "orderType": "string",
@@ -98,25 +98,24 @@ def test_get_order_events(
     }
 
     res = client._get_order_events("")
-    assert len(res.events) == 3
+    assert len(res.deltas) == 4
 
-    assert res.events[0].event_type == OrderEventType.PLACED
-    assert res.events[0].uid == "abc1234"
-    assert res.events[0].timestamp == 1604937694000
-    assert res.events[0].side == OrderSide.BID
-    assert res.events[0].quantity == 1234.56789
-    assert res.events[0].price == 1234.56789
+    assert res.deltas[0].side == OrderSide.ASK
+    assert res.deltas[0].price == 1234.56789
+    assert res.deltas[0].quantity == 1234.56789
+    assert res.deltas[0].sign == 1
 
-    assert res.events[1].event_type == OrderEventType.UPDATED
-    assert res.events[1].uid == "abc12345"
-    assert res.events[1].timestamp == 1604937694001
-    assert res.events[1].side == OrderSide.BID
-    assert res.events[1].quantity == 1234.56789
-    assert res.events[1].price == 1234.56789
+    assert res.deltas[1].side == OrderSide.BID
+    assert res.deltas[1].price == 1234.56789
+    assert res.deltas[1].quantity == 1234.56789
+    assert res.deltas[1].sign == 1
 
-    assert res.events[2].event_type == OrderEventType.CANCELLED
-    assert res.events[2].uid == "abc123456"
-    assert res.events[2].timestamp == 1604937694002
-    assert res.events[2].side == OrderSide.BID
-    assert res.events[2].quantity == 1234.56789
-    assert res.events[2].price == 1234.56789
+    assert res.deltas[2].side == OrderSide.BID
+    assert res.deltas[2].price == 1234.56789
+    assert res.deltas[2].quantity == 1234.56789
+    assert res.deltas[2].sign == -1
+
+    assert res.deltas[3].side == OrderSide.BID
+    assert res.deltas[3].price == 1234.56789
+    assert res.deltas[3].quantity == 1234.56789
+    assert res.deltas[3].sign == -1

@@ -10,6 +10,10 @@ def str_to_order_event_type(s: str) -> OrderEventType:
             return OrderEventType.UPDATED
         case "OrderCancelled":
             return OrderEventType.CANCELLED
+        case "OrderRejected":
+            return OrderEventType.REJECTED
+        case "OrderEditRejected":
+            return OrderEventType.EDIT_REJECTED
         case _:
             raise ValueError(f"Unknown order event type {s}")
         
