@@ -16,7 +16,8 @@ def str_to_order_event_type(s: str) -> OrderEventType:
             return OrderEventType.EDIT_REJECTED
         case _:
             raise ValueError(f"Unknown order event type {s}")
-        
+
+
 def str_to_order_side(s: str) -> OrderSide:
     match s:
         case "Buy":

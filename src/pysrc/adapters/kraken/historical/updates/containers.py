@@ -2,7 +2,8 @@ from enum import Enum
 from typing import Optional
 
 from pysrc.adapters.kraken.future.utils import str_to_order_side
-from pysrc.util.types import OrderSide
+from pysrc.adapters.messages import SnapshotMessage
+from pysrc.util.types import Market, OrderSide
 from collections import defaultdict
 
 
@@ -18,14 +19,17 @@ class UpdateDelta:
     def __init__(
         self,
         side: OrderSide,
+        timestamp: int,
         sign: float,
         quantity: float,
         price: float,
     ):
+        self.timestamp = timestamp
         self.side = side
         self.sign = sign
         self.quantity = quantity
         self.price = price
+
 
 class OrderEventResponse:
     def __init__(
@@ -36,18 +40,33 @@ class OrderEventResponse:
         self.deltas = deltas
         self.continuation_token = continuation_token
 
+
 class MBPBook:
-    def __init__(
-        self
-    ):
-        self._book = [
-            defaultdict(float),
-            defaultdict(float)
+    def __init__(self, feedcode: str, market: Market):
+        self._feedcode = feedcode
+        self._market = market
+
+        self._book = [defaultdict(float), defaultdict(float)]
+
+    def apply_delta(self, delta: UpdateDelta):
+        self._book[delta.side.value - 1][delta.price] += delta.sign * delta.quantity
+
+        if self._book[delta.side.value - 1][delta.price] == 0:
+            del self._book[delta.side.value - 1][delta.price]
+
+    def to_snapshot_message(self, time: int) -> SnapshotMessage:
+        bids = [
+            list(item) for item in self._book[OrderSide.BID.value - 1].items()
         ]
 
-    def apply_deltas(
-        self,
-        deltas: list[UpdateDelta]
-    ):
-        for d in deltas:
-            self._book[d.side.value][d.price] += d.sign * d.quantity
+        asks = [
+            list(item) for item in self._book[OrderSide.ASK.value - 1].items()
+        ]
+
+        return SnapshotMessage(
+            time=-1,
+            feedcode=self._feedcode,
+            bids=bids,
+            asks=asks,
+            market=Market.KRAKEN_USD_FUTURE,
+        )
