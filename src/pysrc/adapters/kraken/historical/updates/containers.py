@@ -55,18 +55,14 @@ class MBPBook:
             del self._book[delta.side.value - 1][delta.price]
 
     def to_snapshot_message(self, time: int) -> SnapshotMessage:
-        bids = [
-            list(item) for item in self._book[OrderSide.BID.value - 1].items()
-        ]
+        bids = [list(item) for item in self._book[OrderSide.BID.value - 1].items()]
 
-        asks = [
-            list(item) for item in self._book[OrderSide.ASK.value - 1].items()
-        ]
+        asks = [list(item) for item in self._book[OrderSide.ASK.value - 1].items()]
 
         return SnapshotMessage(
             time=time,
             feedcode=self._feedcode,
             bids=bids,
             asks=asks,
-            market=self._market
+            market=self._market,
         )

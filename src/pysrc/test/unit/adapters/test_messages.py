@@ -12,7 +12,13 @@ def test_snapshot_message_ctor() -> None:
 
 
 def test_snapshot_serialization() -> None:
-    msg = SnapshotMessage(25, "BTC", [["15", "5"], ["16", "0"]], [["16", "0"], ["17", "1"], ["18", "2"], ["19", "3"]], Market.KRAKEN_SPOT)
+    msg = SnapshotMessage(
+        25,
+        "BTC",
+        [["15", "5"], ["16", "0"]],
+        [["16", "0"], ["17", "1"], ["18", "2"], ["19", "3"]],
+        Market.KRAKEN_SPOT,
+    )
     new_msg = SnapshotMessage.from_bytes(msg.to_bytes())
 
     assert msg.time == new_msg.time
