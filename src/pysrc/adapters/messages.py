@@ -1,5 +1,5 @@
 from io import RawIOBase
-from typing import Optional
+from typing import Optional, Union
 from pysrc.util.types import Market, OrderSide
 import numpy as np
 import struct
@@ -10,8 +10,10 @@ class SnapshotMessage:
         self,
         time: int,
         feedcode: str,
-        bids: list[list[str]],
-        asks: list[list[str]],
+        # bids: list[list[float | str]],
+        # asks: list[list[float | str]],
+        bids: list[list[float]] | list[list[str]],
+        asks: list[list[float]] | list[list[str]],
         market: Market,
     ):
         self.time = time
@@ -76,39 +78,9 @@ class SnapshotMessage:
             time=time,
             feedcode=feedcode_data.decode(),
             market=Market(market_value),
-            bids=bids.reshape((-1, 2)),
-            asks=asks.reshape((-1, 2)),
+            bids=bids.reshape((-1, 2)).tolist(),
+            asks=asks.reshape((-1, 2)).tolist(),
         )
-
-    # @staticmethod
-    # def from_stream(s: RawIOBase) -> Optional['SnapshotMessage']:
-    #     packed_metadata = s.read(24)
-    #     if not packed_metadata:
-    #         return None
-    #     elif len(packed_metadata) < 24:
-    #         raise ValueError("Failed to read metadata from stream")
-
-    #     time, market_value, feedcode_size, bids_size, asks_size = struct.unpack("QIIII", packed_metadata)
-
-    #     feedcode_data = s.read(feedcode_size)
-    #     if not feedcode_data:
-    #         raise ValueError("Failed to read feedcode from stream")
-
-    #     bids = s.read(bids_size)
-    #     if not bids:
-    #         raise ValueError("Failed to read bids from stream")
-
-    #     asks = s.read(asks_size)
-    #     if not asks:
-    #         raise ValueError("Failed to read asks from stream")
-
-    #     return SnapshotMessage(
-    #         time=time,
-    #         feedcode=feedcode_data.decode(),
-    #         market=Market(market_value),
-    #         bids=bids.reshape((-1, 2)),
-    #         asks=asks.reshape((-1, 2))
-    #     )
 
 
 class TradeMessage:

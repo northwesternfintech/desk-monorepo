@@ -34,7 +34,7 @@ class UpdateDelta:
 class OrderEventResponse:
     def __init__(
         self,
-        deltas,
+        deltas: list[UpdateDelta],
         continuation_token: Optional[str],
     ):
         self.deltas = deltas
@@ -46,18 +46,24 @@ class MBPBook:
         self._feedcode = feedcode
         self._market = market
 
-        self._book = [defaultdict(float), defaultdict(float)]
+        self._book: list[dict[float, float]] = [defaultdict(float), defaultdict(float)]
 
-    def apply_delta(self, delta: UpdateDelta):
+    def apply_delta(self, delta: UpdateDelta) -> None:
         self._book[delta.side.value - 1][delta.price] += delta.sign * delta.quantity
 
         if self._book[delta.side.value - 1][delta.price] == 0:
             del self._book[delta.side.value - 1][delta.price]
 
     def to_snapshot_message(self, time: int) -> SnapshotMessage:
-        bids = [list(item) for item in self._book[OrderSide.BID.value - 1].items()]
+        bids = [
+            [price, quantity]
+            for price, quantity in self._book[OrderSide.BID.value - 1].items()
+        ]
 
-        asks = [list(item) for item in self._book[OrderSide.ASK.value - 1].items()]
+        asks = [
+            [price, quantity]
+            for price, quantity in self._book[OrderSide.ASK.value - 1].items()
+        ]
 
         return SnapshotMessage(
             time=time,
