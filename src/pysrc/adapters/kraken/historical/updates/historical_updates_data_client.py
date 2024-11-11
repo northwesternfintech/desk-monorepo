@@ -4,7 +4,7 @@ import struct
 from collections import deque
 from datetime import datetime, timedelta
 from threading import Condition, Thread
-from typing import Any, Generator, Iterable, Optional
+from typing import Any, Generator, Optional
 
 import numpy as np
 import requests

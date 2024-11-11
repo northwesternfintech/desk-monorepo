@@ -1,5 +1,3 @@
-from io import RawIOBase
-from typing import Optional, Union
 from pysrc.util.types import Market, OrderSide
 import numpy as np
 import struct

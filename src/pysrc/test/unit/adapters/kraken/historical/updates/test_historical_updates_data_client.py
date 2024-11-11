@@ -214,7 +214,7 @@ def test_get_execution_events(
     mock_make_request.return_value = EXECUTION_EVENTS
 
     res = client._get_execution_events("")
-    assert res.continuation_token == None
+    assert res.continuation_token is None
     assert len(res.deltas) == 2
 
     assert res.deltas[0].side == OrderSide.BID
