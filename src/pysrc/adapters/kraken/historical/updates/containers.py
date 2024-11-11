@@ -64,9 +64,9 @@ class MBPBook:
         ]
 
         return SnapshotMessage(
-            time=-1,
+            time=time,
             feedcode=self._feedcode,
             bids=bids,
             asks=asks,
-            market=Market.KRAKEN_USD_FUTURE,
+            market=self._market
         )
