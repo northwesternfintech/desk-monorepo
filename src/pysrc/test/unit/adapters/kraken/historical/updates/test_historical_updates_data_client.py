@@ -1,13 +1,20 @@
 from datetime import datetime
+import os
+import shutil
 from unittest.mock import MagicMock, patch
 from pysrc.adapters.kraken.historical.updates.containers import MBPBook, UpdateDelta
 from pysrc.adapters.kraken.historical.updates.historical_updates_data_client import (
     HistoricalUpdatesDataClient,
 )
 
+from pysrc.adapters.messages import SnapshotMessage
+from pysrc.test.helpers import get_resources_path
 from pysrc.util.types import Market, OrderSide
 import pytest
 
+from pyzstd import compress, CParameter
+
+resource_path = str(get_resources_path(__file__))
 
 def test_mbp_book() -> None:
     book = MBPBook("BONKUSD", Market.KRAKEN_USD_FUTURE)
@@ -38,7 +45,7 @@ def test_mbp_book() -> None:
 
 @pytest.fixture
 def client() -> HistoricalUpdatesDataClient:
-    return HistoricalUpdatesDataClient("")
+    return HistoricalUpdatesDataClient(resource_path)
 
 
 ORDER_EVENTS = {
@@ -256,6 +263,7 @@ def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
 
     snapshot = client._compute_next_snapshot()
     assert snapshot
+    assert snapshot.time == 1
     assert snapshot.feedcode == "BONKUSD"
     assert snapshot.market == Market.KRAKEN_USD_FUTURE
     assert len(snapshot.bids) == 0
@@ -265,6 +273,7 @@ def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
 
     snapshot = client._compute_next_snapshot()
     assert snapshot
+    assert snapshot.time == 2
     assert snapshot.feedcode == "BONKUSD"
     assert snapshot.market == Market.KRAKEN_USD_FUTURE
     assert len(snapshot.bids) == 3
@@ -278,6 +287,7 @@ def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
 
     snapshot = client._compute_next_snapshot()
     assert snapshot
+    assert snapshot.time == 10
     assert snapshot.feedcode == "BONKUSD"
     assert snapshot.market == Market.KRAKEN_USD_FUTURE
     assert len(snapshot.bids) == 4
@@ -294,3 +304,82 @@ def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
 
     snapshot = client._compute_next_snapshot()
     assert snapshot is None
+
+
+def test_stream_snapshot(client: HistoricalUpdatesDataClient) -> None:
+    snapshots = [
+        SnapshotMessage(
+            time=1,
+            feedcode="BONKUSD",
+            market=Market.KRAKEN_USD_FUTURE,
+            bids=[],
+            asks=[[1, 2]]
+        ),
+        SnapshotMessage(
+            time=2,
+            feedcode="BONKUSD",
+            market=Market.KRAKEN_USD_FUTURE,
+            bids=[[3, 4], [5, -6], [68717.5, -3000]],
+            asks=[[1, 2], [68717.5, -3000]]
+        ),
+        SnapshotMessage(
+            time=10,
+            feedcode="BONKUSD",
+            market=Market.KRAKEN_USD_FUTURE,
+            bids=[[3, 4], [5, -6], [68717.5, -3000], [7, -8]],
+            asks=[[1, 2], [68717.5, -3000]]
+        ),
+    ]
+
+    snapshots_bytes = b''
+    for s in snapshots:
+        snapshots_bytes += s.to_bytes()
+
+    test_dir = os.path.join(resource_path, "BONKUSD")
+    os.makedirs(test_dir, exist_ok=True)
+    test_path = os.path.join(test_dir, "11_05_2024")
+    with open(test_path, "wb") as f:
+        f.write(compress(snapshots_bytes, level_or_option={CParameter.compressionLevel: 10}))
+
+    gen = client.stream_updates("BONKUSD", datetime(year=2024, month=11, day=5), until=datetime(year=2024, month=11, day=6))
+    
+    s1 = next(gen)
+    assert s1
+    assert s1.time == 1
+    assert s1.feedcode == "BONKUSD"
+    assert s1.market == Market.KRAKEN_USD_FUTURE
+    assert len(s1.bids) == 0
+    assert len(s1.asks) == 1
+    assert (1, 2) in s1.asks
+
+    s2 = next(gen)
+    assert s2
+    assert s2.time == 2
+    assert s2.feedcode == "BONKUSD"
+    assert s2.market == Market.KRAKEN_USD_FUTURE
+    assert len(s2.bids) == 3
+    assert len(s2.asks) == 2
+    assert (1, 2) in s2.asks
+    assert (68717.5, -3000) in s2.asks
+    assert (3, 4) in s2.bids
+    assert (5, -6) in s2.bids
+    assert (68717.5, -3000) in s2.bids
+
+    s3 = next(gen)
+    assert s3
+    assert s3.time == 10
+    assert s3.feedcode == "BONKUSD"
+    assert s3.market == Market.KRAKEN_USD_FUTURE
+    assert len(s3.bids) == 4
+    assert len(s3.asks) == 2
+    assert (1, 2) in s3.asks
+    assert (68717.5, -3000) in s3.asks
+    assert (3, 4) in s3.bids
+    assert (5, -6) in s3.bids
+    assert (68717.5, -3000) in s3.bids
+    assert (7, -8) in s3.bids
+
+    with pytest.raises(StopIteration):
+        next(gen)
+
+    shutil.rmtree(resource_path)

@@ -23,7 +23,7 @@ import sys
 from collections import deque
 from threading import Event, Thread, Condition
 import numpy as np
-from pyzstd import CParameter, compress, decompress, compress_stream, ZstdCompressor
+from pyzstd import CParameter, compress, decompress, compress_stream, ZstdCompressor, EndlessZstdDecompressor
 
 import struct
 
@@ -235,11 +235,12 @@ class HistoricalUpdatesDataClient:
             if (self._exec_deltas[0].timestamp // 1000) != self._cur_sec and (
                 self._order_deltas[0].timestamp // 1000
             ) != self._cur_sec:
+                prev_sec = self._cur_sec
                 self._cur_sec = min(
                     self._exec_deltas[0].timestamp // 1000,
                     self._order_deltas[0].timestamp // 1000,
                 )
-                return self._mbp_book.to_snapshot_message(self._cur_sec)
+                return self._mbp_book.to_snapshot_message(prev_sec)
             
             if self._exec_deltas[0].timestamp < self._order_deltas[0].timestamp:
                 delta = self._exec_deltas.popleft()
@@ -255,8 +256,9 @@ class HistoricalUpdatesDataClient:
                 self._order_cond_var.wait_for(lambda: len(self._order_deltas))
 
             if (self._order_deltas[0].timestamp // 1000) != self._cur_sec:
+                prev_sec = self._cur_sec
                 self._cur_sec = self._order_deltas[0].timestamp // 1000
-                return self._mbp_book.to_snapshot_message(self._cur_sec)
+                return self._mbp_book.to_snapshot_message(prev_sec)
 
             delta = self._order_deltas.popleft()
             self._cur_sec = delta.timestamp // 1000
@@ -268,8 +270,9 @@ class HistoricalUpdatesDataClient:
                 self._exec_cond_var.wait_for(lambda: len(self._exec_deltas))
 
             if (self._exec_deltas[0].timestamp // 1000) != self._cur_sec:
+                prev_sec = self._cur_sec
                 self._cur_sec = self._exec_deltas[0].timestamp // 1000
-                return self._mbp_book.to_snapshot_message(self._cur_sec)
+                return self._mbp_book.to_snapshot_message(prev_sec)
 
             delta = self._exec_deltas.popleft()
             self._cur_sec = delta.timestamp // 1000
@@ -287,7 +290,7 @@ class HistoricalUpdatesDataClient:
         day: datetime,
     ):
         file_path = os.path.join(self._resource_path, asset, day.strftime("%m_%d_%Y"))
-        c = ZstdCompressor(level_or_option=self._zstd_options)
+        compressor = ZstdCompressor(level_or_option=self._zstd_options)
         f = open(file_path, "wb")
 
         order_thread = Thread(
@@ -302,13 +305,13 @@ class HistoricalUpdatesDataClient:
 
         snapshot = self._compute_next_snapshot()
         while snapshot:
-            f.write(c.compress(snapshot.to_bytes()))
+            f.write(compressor.compress(snapshot.to_bytes()))
             snapshot = self._compute_next_snapshot()
 
         order_thread.join()
         exec_thread.join()
 
-        f.write(c.flush())
+        f.write(compressor.flush())
         f.close()
 
     def download_updates(
@@ -337,3 +340,89 @@ class HistoricalUpdatesDataClient:
 
             self._compute_updates_for_day(asset, since)
             since += timedelta(days=1)
+
+    def _decompress_bytes(
+        self, decompressor: EndlessZstdDecompressor, f, output_size
+    ) -> bytes:
+        out = b''
+
+        while len(out) < output_size:
+            if decompressor.needs_input:
+                f_data = f.read(1024 ** 2)
+
+                if not f_data:
+                    break
+            else:
+                f_data = b''
+
+            out += decompressor.decompress(f_data, max_length=output_size)
+        
+        return out
+            
+
+    def _snapshot_message_from_stream(
+        self, decompressor: EndlessZstdDecompressor, f
+    ) -> Optional[SnapshotMessage]:
+        packed_metadata = self._decompress_bytes(decompressor, f, 24)
+        if not packed_metadata:
+            return None
+        elif len(packed_metadata) < 24:
+            raise ValueError("Failed to read metadata from stream")
+
+        time, market_value, feedcode_size, bids_size, asks_size = struct.unpack("QIIII", packed_metadata)
+
+        feedcode_data = self._decompress_bytes(decompressor, f, feedcode_size)
+        if len(feedcode_data) < feedcode_size:
+            raise ValueError("Failed to read feedcode from stream")
+
+        bids_bytes = self._decompress_bytes(decompressor, f, bids_size)
+        if len(bids_bytes) < bids_size:
+            raise ValueError("Failed to read bids from stream")
+        bids = np.frombuffer(bids_bytes)
+
+        asks_bytes = self._decompress_bytes(decompressor, f, asks_size)
+        if len(asks_bytes) < asks_size:
+            raise ValueError("Failed to read asks from stream")
+        asks = np.frombuffer(asks_bytes)
+
+        return SnapshotMessage(
+            time=time,
+            feedcode=feedcode_data.decode(),
+            market=Market(market_value),
+            bids=bids.reshape((-1, 2)),
+            asks=asks.reshape((-1, 2))
+        )
+
+    def stream_updates(
+        self, asset: str, since: datetime, until: Optional[datetime]
+    ):
+        asset_path = os.path.join(self._resource_path, asset)
+        if not os.path.exists(asset_path):
+            print(asset_path)
+            raise ValueError(f"No directory for `{asset}` found in resource path")
+        
+        if not until:
+            until = datetime.today()
+
+        for i in range((until - since).days):
+            cur = since + timedelta(days=i)
+            cur_file_name = cur.strftime("%m_%d_%Y")
+            cur_path = os.path.join(asset_path, cur_file_name)
+
+            if not os.path.exists(cur_path):
+                raise ValueError(f"Expected file '{cur_path}' does not exist")
+            
+        decompressor = EndlessZstdDecompressor()
+            
+        for i in range((until - since).days):
+            cur = since + timedelta(days=i)
+            cur_file_name = cur.strftime("%m_%d_%Y")
+            cur_path = os.path.join(asset_path, cur_file_name)
+
+            with open(cur_path, "rb") as f:
+                while True:
+                    snapshot = self._snapshot_message_from_stream(decompressor, f)
+                    if not snapshot:
+                        break
+
+                    yield snapshot
