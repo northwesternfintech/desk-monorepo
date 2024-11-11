@@ -8,8 +8,6 @@ class SnapshotMessage:
         self,
         time: int,
         feedcode: str,
-        # bids: list[list[float | str]],
-        # asks: list[list[float | str]],
         bids: list[list[float]] | list[list[str]],
         asks: list[list[float]] | list[list[str]],
         market: Market,
@@ -52,7 +50,7 @@ class SnapshotMessage:
     @staticmethod
     def from_bytes(b: bytes) -> "SnapshotMessage":
         if len(b) < 24:
-            raise ValueError("Can't create SnapshotMessage from <16 bytes")
+            raise ValueError("Can't create SnapshotMessage from <24 bytes")
 
         packed_metadata = b[:24]
         data = b[24:]
