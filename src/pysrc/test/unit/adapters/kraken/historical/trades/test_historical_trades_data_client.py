@@ -1,6 +1,8 @@
 from datetime import datetime
 import os
-from pysrc.adapters.kraken.historical.historical_data_client import HistoricalDataClient
+from pysrc.adapters.kraken.historical.trades.historical_trades_data_client import (
+    HistoricalTradesDataClient,
+)
 from pysrc.test.helpers import get_resources_path
 import numpy as np
 from pysrc.util.types import Market
@@ -10,7 +12,7 @@ resource_path = str(get_resources_path(__file__))
 
 def test_chunking() -> None:
     test_file_path = os.path.join(resource_path, "BONKUSD", "test.csv")
-    client = HistoricalDataClient()
+    client = HistoricalTradesDataClient()
     chunked_files = client._chunk_csv_by_day(test_file_path)
 
     expected_chunked_files = [
@@ -45,7 +47,7 @@ def test_chunking() -> None:
 
 def test_serialization() -> None:
     test_file_path = os.path.join(resource_path, "BONKUSD", "test.csv")
-    client = HistoricalDataClient()
+    client = HistoricalTradesDataClient()
 
     serialized_file_path = client._serialize_csv(test_file_path)
     trades = client.get_trades_from_file(serialized_file_path)
@@ -87,7 +89,7 @@ def test_serialization() -> None:
 
 def test_get_trades() -> None:
     test_file_path = os.path.join(resource_path, "BONKUSD", "test.csv")
-    client = HistoricalDataClient()
+    client = HistoricalTradesDataClient()
     chunked_files = client._chunk_csv_by_day(test_file_path)
 
     chunked_file = os.path.join(resource_path, "BONKUSD", "07_01_2024.csv")
