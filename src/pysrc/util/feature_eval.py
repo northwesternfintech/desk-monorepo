@@ -39,4 +39,4 @@ class Evaluator:
         for feature in self.features:
             input_matrix.append(calc_features[feature])
         input_matrix.append(target)
-        return np.corrocoef(input_matrix)
+        return np.corrcoef(input_matrix)
