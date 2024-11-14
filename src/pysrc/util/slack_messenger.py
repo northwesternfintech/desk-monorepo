@@ -55,7 +55,7 @@ def send_slack_message(channel: str, message: str, mentions: list[str] = []) -> 
         print(f"Error sending message: {e.response['error']}")
 
 
-def send_slack_message_to_current_server_user(channel: str, message: str):
+def send_slack_message_to_current_server_user(channel: str, message: str) -> None:
     slack_user = get_current_user_slack_name()
     send_slack_message(channel, message, [slack_user])
 

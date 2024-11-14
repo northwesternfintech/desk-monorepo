@@ -1,6 +1,9 @@
 import pytest
 
-from pysrc.util.slack_messenger import _format_mention, send_slack_message_to_current_server_user
+from pysrc.util.slack_messenger import (
+    _format_mention,
+    send_slack_message_to_current_server_user,
+)
 from unittest.mock import patch, MagicMock
 
 
@@ -28,9 +31,12 @@ def test_format_mention_invalid_input() -> None:
     with pytest.raises(AssertionError):
         _format_mention("")
 
+
 @patch("pysrc.util.system.get_current_user")
 @patch("pysrc.util.slack_messenger.send_slack_message")
-def test_send_messsage_to_current_server_user(mock_send_slack_message: MagicMock, mock_get_current_user: MagicMock) -> None:
+def test_send_messsage_to_current_server_user(
+    mock_send_slack_message: MagicMock, mock_get_current_user: MagicMock
+) -> None:
     mock_get_current_user.return_value = "mglass"
     send_slack_message_to_current_server_user("general", "hello")
     mock_send_slack_message.assert_called_once_with("general", "hello", ["Max Glass"])
