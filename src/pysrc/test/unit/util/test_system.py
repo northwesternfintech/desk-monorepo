@@ -35,3 +35,10 @@ def test_current_user() -> None:
 def test_get_current_user_slack_name(mock_get_current_user: MagicMock) -> None:
     mock_get_current_user.return_value = "mglass"
     assert get_current_user_slack_name() == "Max Glass"
+
+
+@patch("pysrc.util.system.get_current_user")
+def test_get_current_user_slack_name(mock_get_current_user: MagicMock) -> None:
+    mock_get_current_user.return_value = "abc1234"
+    with pytest.raises(AssertionError):
+        get_current_user_slack_name()

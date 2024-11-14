@@ -2,6 +2,7 @@ from typing import Optional
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from pysrc.util.slack_utils import get_slack_id_by_name, get_user_if_valid
+from pysrc.util.system import get_current_user_slack_name
 import os
 
 SPECIAL_MENTIONS = ("here", "everyone", "channel")
@@ -52,6 +53,11 @@ def send_slack_message(channel: str, message: str, mentions: list[str] = []) -> 
         print(f"Message sent to {channel}: {response['ts']}")
     except SlackApiError as e:
         print(f"Error sending message: {e.response['error']}")
+
+
+def send_slack_message_to_current_server_user(channel: str, message: str):
+    slack_user = get_current_user_slack_name()
+    send_slack_message(channel, message, [slack_user])
 
 
 def does_slack_user_exist(name: str) -> bool:
