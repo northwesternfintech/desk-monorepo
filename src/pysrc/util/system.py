@@ -2,7 +2,28 @@ import socket
 import getpass
 from pysrc.util.types import Server
 
-SERVER_USERNAME_TO_SLACK_NAME: dict[str, str] = {"echavemann": "Ethan Havemann"}
+SERVER_USERNAME_TO_SLACK_NAME: dict[str, str] = {
+    "echavemann": "Ethan Havemann",
+    "andrlime": "Andrew Li",
+    "avillasenor": "Aidan Villasenor",
+    "bhu": "Blake Hu",
+    "dsl": "Daniel Lee",
+    "efang": "Eddie Fang",
+    "frankling": "Franklin Zhao",
+    "gwang": "Gavin Wang",
+    "jay": "Jay Park",
+    "JCJR": "Jerry Cao",
+    "jenny": "Jenny Zhou",
+    "jerry": "Jerry Han",
+    "john": "John Hileman",
+    "mglass": "Max Glass",
+    "minnce": "Chris Minn",
+    "miya": "Miya Liu",
+    "mmaiti": "Milind Maiti",
+    "nikola": "Nino",
+    "rewong": "Ryan Wong",
+    "steev": "Steve Ewald",
+}
 
 
 def get_current_server() -> Server:
