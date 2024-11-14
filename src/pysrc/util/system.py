@@ -41,7 +41,9 @@ def get_current_user_slack_name() -> str:
     print(current_user)
     slack_name = SERVER_USERNAME_TO_SLACK_NAME.get(current_user)
     if slack_name is None:
-        DIE(f"Could not find user {current_user} in the username to slack name mapping!")
+        DIE(
+            f"Could not find user {current_user} in the username to slack name mapping!"
+        )
     return slack_name
 
 
