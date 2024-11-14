@@ -2,6 +2,8 @@ import socket
 import getpass
 from pysrc.util.types import Server
 
+SERVER_USERNAME_TO_SLACK_NAME: dict[str, str] = {"echavemann": "Ethan Havemann"}
+
 
 def get_current_server() -> Server:
     hostname = _get_current_server_hostname()
