@@ -147,7 +147,7 @@ class ChunkedEventQueue:
             with order_cond_var:
                 order_cond_var.wait_for(lambda: len(order_delta_queue) or self._done_flags[EventType.ORDER][self._cur_chunk])
 
-            if not self._done_flags[EventType.ORDER][self._cur_chunk]:
+            if order_delta_queue:
                 order_event = order_delta_queue[0]
 
         if exec_delta_queue:
@@ -156,7 +156,7 @@ class ChunkedEventQueue:
             with exec_cond_var:
                 exec_cond_var.wait_for(lambda: len(exec_delta_queue) or self._done_flags[EventType.EXECUTION][self._cur_chunk])
 
-            if not self._done_flags[EventType.EXECUTION][self._cur_chunk]:
+            if exec_delta_queue:
                 exec_event = exec_delta_queue[0]
 
         if self._done_flags[EventType.ORDER][self._cur_chunk] and self._done_flags[EventType.EXECUTION][self._cur_chunk] and not order_delta_queue and not exec_delta_queue:

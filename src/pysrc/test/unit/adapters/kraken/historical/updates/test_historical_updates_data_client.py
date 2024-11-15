@@ -293,42 +293,38 @@ def test_get_execution_events(
 def test_queue_events_for_day(
     mock_make_request: MagicMock, client: HistoricalUpdatesDataClient
 ) -> None:
-    with patch.object(
-        client, "_order_cond_var", new_callable=MagicMock
-    ) as mock_order_cond_var:
-        order_return_val = ORDER_EVENTS.copy()
-        order_return_val["continuationToken"] = None
-        mock_make_request.return_value = order_return_val
+    client._queue._cond_vars[EventType.ORDER][0] = MagicMock()
+    order_return_val = ORDER_EVENTS.copy()
+    order_return_val["continuationToken"] = None
+    mock_make_request.return_value = order_return_val
 
-        client._queue_events_for_day("", datetime(year=2024, month=11, day=5), True)
+    client._queue_events_for_day("", datetime(year=2024, month=11, day=5), EventType.ORDER)
 
-        assert client._done_getting_order_events
-        assert len(client._order_deltas) == 4
-        mock_order_cond_var.notify.assert_called()
+    assert client._queue._done_flags[EventType.ORDER][0]
+    assert len(client._queue._queues[EventType.ORDER][0]) == 4
+    client._queue._cond_vars[EventType.ORDER][0].notify.assert_called()
 
-    with patch.object(
-        client, "_exec_cond_var", new_callable=MagicMock
-    ) as mock_exec_cond_var:
-        mock_make_request.return_value = EXECUTION_EVENTS
-
-        client._queue_events_for_day("", datetime(year=2024, month=11, day=5), False)
-
-        assert client._done_getting_exec_events
-        assert len(client._exec_deltas) == 2
-        mock_exec_cond_var.notify.assert_called()
+    client._queue._cond_vars[EventType.EXECUTION][0] = MagicMock()
+    mock_make_request.return_value = EXECUTION_EVENTS
+    client._queue_events_for_day("", datetime(year=2024, month=11, day=5), EventType.EXECUTION)
+    assert client._queue._done_flags[EventType.EXECUTION][0]
+    assert len(client._queue._queues[EventType.EXECUTION][0]) == 2
+    client._queue._cond_vars[EventType.EXECUTION][0].notify.assert_called()
 
 
 def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
     client._mbp_book = MBPBook(feedcode="BONKUSD", market=Market.KRAKEN_USD_FUTURE)
-    client._done_getting_order_events = True
-    client._done_getting_exec_events = True
+    client._queue = ChunkedEventQueue(num_chunks=1)
     client._cur_sec = 1
 
     for e in ORDER_EVENTS["elements"]:
-        client._order_deltas.extend(client._delta_from_order_event(e))
+        client._queue.put(client._delta_from_order_event(e), EventType.ORDER, 0)
 
     for e in EXECUTION_EVENTS["elements"]:
-        client._exec_deltas.extend(client._delta_from_execution_event(e))
+        client._queue.put(client._delta_from_execution_event(e), EventType.EXECUTION, 0)
+
+    client._queue.mark_done(EventType.ORDER, 0)
+    client._queue.mark_done(EventType.EXECUTION, 0)
 
     snapshot = client._compute_next_snapshot()
     assert snapshot
@@ -368,8 +364,8 @@ def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
     assert (68717.5, -3000) in snapshot.bids
     assert (7, -8) in snapshot.bids
 
-    assert len(client._order_deltas) == 0
-    assert len(client._exec_deltas) == 0
+    assert len(client._queue._queues[EventType.ORDER][0]) == 0
+    assert len(client._queue._queues[EventType.EXECUTION][0]) == 0
 
     snapshot = client._compute_next_snapshot()
     assert snapshot is None

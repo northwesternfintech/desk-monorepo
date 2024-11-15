@@ -11,6 +11,8 @@ import requests
 from pyzstd import CParameter, EndlessZstdDecompressor, ZstdCompressor
 
 from pysrc.adapters.kraken.historical.updates.containers import (
+    ChunkedEventQueue,
+    EventType,
     MBPBook,
     OrderEventResponse,
     OrderEventType,
@@ -29,14 +31,7 @@ class HistoricalUpdatesDataClient:
         self._resource_path = resource_path
         self._session = requests.Session()
 
-        self._done_getting_order_events = False
-        self._done_getting_exec_events = False
-
-        self._order_deltas: deque[UpdateDelta] = deque()
-        self._exec_deltas: deque[UpdateDelta] = deque()
-
-        self._order_cond_var = Condition()
-        self._exec_cond_var = Condition()
+        self._queue = ChunkedEventQueue(num_chunks=1)
 
         self._cur_sec = -1
 
@@ -168,20 +163,16 @@ class HistoricalUpdatesDataClient:
         self,
         asset: str,
         day: datetime,
-        should_get_order_events: bool,
+        event_type: EventType,
     ) -> None:
-        get_events_func = (
-            self._get_order_events
-            if should_get_order_events
-            else self._get_execution_events
-        )
-        queue = self._order_deltas if should_get_order_events else self._exec_deltas
-        cond_var = (
-            self._order_cond_var if should_get_order_events else self._exec_cond_var
-        )
+        match event_type:
+            case EventType.ORDER:
+                get_events_func = self._get_order_events
+            case EventType.EXECUTION:
+                get_events_func = self._get_execution_events
 
         since_time = int(day.timestamp() * 1000)
-        before_time = int((day + timedelta(days=1)).timestamp() * 1000)
+        before_time = int((day + timedelta(hours=2)).timestamp() * 1000)
 
         continuation_token = None
         while True:
@@ -192,81 +183,30 @@ class HistoricalUpdatesDataClient:
                 continuation_token=continuation_token,
             )
 
-            for d in order_res.deltas:
-                queue.append(d)
-
-            with cond_var:
-                cond_var.notify()
+            self._queue.put(order_res.deltas, event_type, 0)
 
             continuation_token = order_res.continuation_token
             if not continuation_token:
                 break
 
-        if should_get_order_events:
-            self._done_getting_order_events = True
-        else:
-            self._done_getting_exec_events = True
+        self._queue.mark_done(event_type, 0)
 
     def _compute_next_snapshot(self) -> Optional[SnapshotMessage]:
-        is_last_iter = len(self._order_deltas) > 0 or len(self._exec_deltas) > 0
+        is_last_iter = not self._queue.empty()
 
         while True:
-            if (not self._order_deltas and self._done_getting_order_events) or (
-                not self._exec_deltas and self._done_getting_exec_events
-            ):
+            next_delta = self._queue.peek()
+            
+            if next_delta is None:
                 break
 
-            with self._order_cond_var:
-                self._order_cond_var.wait_for(lambda: len(self._order_deltas))
-
-            with self._exec_cond_var:
-                self._exec_cond_var.wait_for(lambda: len(self._exec_deltas))
-
-            if (self._exec_deltas[0].timestamp) != self._cur_sec and (
-                self._order_deltas[0].timestamp
-            ) != self._cur_sec:
+            if next_delta.timestamp != self._cur_sec:
                 prev_sec = self._cur_sec
-                self._cur_sec = min(
-                    self._exec_deltas[0].timestamp,
-                    self._order_deltas[0].timestamp,
-                )
+                self._cur_sec = next_delta.timestamp
                 return self._mbp_book.to_snapshot_message(prev_sec)
-
-            if self._exec_deltas[0].timestamp < self._order_deltas[0].timestamp:
-                delta = self._exec_deltas.popleft()
-            else:
-                delta = self._order_deltas.popleft()
-
+            
+            delta = self._queue.get()
             self._cur_sec = delta.timestamp
-
-            self._mbp_book.apply_delta(delta)
-
-        while not self._done_getting_order_events or self._order_deltas:
-            with self._order_cond_var:
-                self._order_cond_var.wait_for(lambda: len(self._order_deltas))
-
-            if (self._order_deltas[0].timestamp) != self._cur_sec:
-                prev_sec = self._cur_sec
-                self._cur_sec = self._order_deltas[0].timestamp
-                return self._mbp_book.to_snapshot_message(prev_sec)
-
-            delta = self._order_deltas.popleft()
-            self._cur_sec = delta.timestamp
-
-            self._mbp_book.apply_delta(delta)
-
-        while not self._done_getting_exec_events or self._exec_deltas:
-            with self._exec_cond_var:
-                self._exec_cond_var.wait_for(lambda: len(self._exec_deltas))
-
-            if (self._exec_deltas[0].timestamp) != self._cur_sec:
-                prev_sec = self._cur_sec
-                self._cur_sec = self._exec_deltas[0].timestamp
-                return self._mbp_book.to_snapshot_message(prev_sec)
-
-            delta = self._exec_deltas.popleft()
-            self._cur_sec = delta.timestamp
-
             self._mbp_book.apply_delta(delta)
 
         if is_last_iter:
@@ -284,12 +224,12 @@ class HistoricalUpdatesDataClient:
         f = open(file_path, "wb")
 
         order_thread = Thread(
-            target=self._queue_events_for_day, args=(asset, day, True)
+            target=self._queue_events_for_day, args=(asset, day, EventType.ORDER)
         )
         order_thread.start()
 
         exec_thread = Thread(
-            target=self._queue_events_for_day, args=(asset, day, False)
+            target=self._queue_events_for_day, args=(asset, day, EventType.EXECUTION)
         )
         exec_thread.start()
 
@@ -316,19 +256,10 @@ class HistoricalUpdatesDataClient:
 
         for i in range((until - since).days):
             cur = since + timedelta(days=i)
+
             self._mbp_book = MBPBook(feedcode=asset, market=Market.KRAKEN_USD_FUTURE)
-
-            self._done_getting_order_events = False
-            self._done_getting_exec_events = False
-
-            self._order_deltas = deque()
-            self._exec_deltas = deque()
-
-            self._order_cond_var = Condition()
-            self._exec_cond_var = Condition()
-
+            self._queue = ChunkedEventQueue(num_chunks=1)
             self._cur_sec = int(cur.timestamp())
-
             self._compute_updates_for_day(asset, cur)
 
     def _decompress_bytes(
