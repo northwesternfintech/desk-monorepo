@@ -1,4 +1,4 @@
-name: CI - Linting and Type Checking
+name: CI - Python Linting and Type Checking
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  lint-and-type-check:
+  lint-and-type-check-py:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,4 +28,4 @@ jobs:
       run: make install
 
     - name: Run ruff and mypy
-      run: make lint
+      run: make pylint

@@ -1,4 +1,4 @@
-.PHONY: install test ci lint format unit integration cppinstall build
+.PHONY: install cppinstall build test ci lint pylint cpplint fomrat unit cpptest integration test-backtester
 
 RELEASE_TYPE = Release
 PY_SRC = src/pysrc
@@ -19,18 +19,31 @@ test: lint unit
 
 ci: test integration
 
-lint:
+lint: pylint cpplint
+
+pylint:
 	poetry run mypy src
 	poetry run ruff check src
 	poetry run ruff format --check src
 
+cpplint:
+	find src -name '*.cpp' -o -name '*.hpp' | xargs clang-format --style=file --dry-run -Werror
+	run-clang-tidy -j $(shell nproc) -p build
+
 format:
 	poetry run ruff format src
 	poetry run ruff check --fix src
+	find src -name '*.cpp' -o -name '*.hpp' | xargs clang-format --style=file -i
+	run-clang-tidy -fix -j $(shell nproc) -p build
+
 
 unit:
 	poetry run pytest src/pysrc/test/unit
 
+cpptest: test-backtester
+
 integration:
 	poetry run pytest src/pysrc/test/integration
 
+test-backtester:
+	cd build && ./backtester_tests
