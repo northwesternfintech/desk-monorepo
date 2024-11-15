@@ -26,5 +26,5 @@ jobs:
     - name: Install code dependencies
       run: make build
 
-    - name: Run unit tests
+    - name: Run Clang-Format and Clang-Tidy
       run: make cpplint 
