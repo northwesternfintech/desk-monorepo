@@ -1,19 +1,22 @@
-from datetime import datetime
 import os
+import random
 import shutil
+import threading
+import time
 import typing
+from datetime import datetime
 from unittest.mock import MagicMock, patch
-from pysrc.adapters.kraken.historical.updates.containers import MBPBook, UpdateDelta
-from pysrc.adapters.kraken.historical.updates.historical_updates_data_client import (
-    HistoricalUpdatesDataClient,
-)
 
+import pytest
+from pyzstd import CParameter, compress
+
+from pysrc.adapters.kraken.historical.updates.containers import (
+    ChunkedEventQueue, EventType, MBPBook, UpdateDelta)
+from pysrc.adapters.kraken.historical.updates.historical_updates_data_client import \
+    HistoricalUpdatesDataClient
 from pysrc.adapters.messages import SnapshotMessage
 from pysrc.test.helpers import get_resources_path
 from pysrc.util.types import Market, OrderSide
-import pytest
-
-from pyzstd import compress, CParameter
 
 resource_path = str(get_resources_path(__file__))
 
@@ -44,6 +47,64 @@ def test_mbp_book() -> None:
     assert snapshot.asks == [(15, 10)]
     assert snapshot.bids == [(12, 10)]
 
+def random_fill_queue(queue: ChunkedEventQueue):
+    assert queue._num_chunks == 5
+
+    r = list(range(5))
+    random.shuffle(r)
+    for i in r:
+        choice = random.randint(0, 1)
+        event_type = EventType(choice % 2)
+        other_event_type = EventType(1 - (choice % 2))
+
+        
+        for j in range(3):
+            delta = UpdateDelta(OrderSide.BID, i * 4 + j, 1, i * 4 + j, i * 4 + j)
+            queue.put([delta], event_type, i)
+
+        time.sleep(0.05)
+        queue.mark_done(event_type, i)
+        time.sleep(0.05)
+
+        delta = UpdateDelta(OrderSide.BID, i * 4 + 3, 1, i * 4 + 3, i * 4 + 3)
+        queue.put([delta], other_event_type, i)
+
+        time.sleep(0.05)
+        queue.mark_done(other_event_type, i)
+        time.sleep(0.05)
+
+def test_chunked_event_queue() -> None:
+    queue = ChunkedEventQueue(num_chunks=5)
+
+    thread = threading.Thread(target=random_fill_queue, args=(queue,))
+
+    thread.start()
+
+    for i in range(20):
+        assert not queue.empty()
+
+        delta = queue.peek()
+        assert delta.side == OrderSide.BID
+        assert delta.timestamp == i
+        assert delta.sign == 1
+        assert delta.price == i
+        assert delta.quantity == i
+
+        delta = queue.get()
+        assert delta.side == OrderSide.BID
+        assert delta.timestamp == i
+        assert delta.sign == 1
+        assert delta.price == i
+        assert delta.quantity == i
+
+    # assert queue.empty()
+    # assert queue.peek() is None
+    # assert queue.pop() is None
+
+    thread.join()
+
+if __name__ == "__main__":
+    test_chunked_event_queue()
 
 @pytest.fixture
 def client() -> HistoricalUpdatesDataClient:

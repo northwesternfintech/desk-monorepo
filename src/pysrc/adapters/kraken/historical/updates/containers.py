@@ -1,9 +1,16 @@
 from enum import Enum
+import sys
+from threading import Condition
 from typing import Optional
 
 from pysrc.adapters.messages import SnapshotMessage
 from pysrc.util.types import Market, OrderSide
-from collections import defaultdict
+from collections import defaultdict, deque
+
+
+class EventType(Enum):
+    ORDER = 0
+    EXECUTION = 1
 
 
 class OrderEventType(Enum):
@@ -71,3 +78,109 @@ class MBPBook:
             asks=asks,
             market=self._market,
         )
+
+class ChunkedEventQueue:
+    def __init__(self, num_chunks: int = 24):
+        self._num_chunks = num_chunks
+
+        if self._num_chunks <= 0:
+            raise ValueError("num_chunks must be greater than zero")
+
+        self._done_flags = {
+            EventType.ORDER: [False for _ in range(self._num_chunks)],
+            EventType.EXECUTION: [False for _ in range(self._num_chunks)],
+        }
+
+        self._queues = {
+            EventType.ORDER: [deque() for _ in range(self._num_chunks)],
+            EventType.EXECUTION: [deque() for _ in range(self._num_chunks)],
+        }
+
+        self._cond_vars = {
+            EventType.ORDER: [Condition() for _ in range(self._num_chunks)],
+            EventType.EXECUTION: [Condition() for _ in range(self._num_chunks)],
+        }
+
+        self._cur_chunk = 0
+
+    def empty(self) -> bool:
+        return self._cur_chunk >= self._num_chunks
+    
+    def mark_done(self, event_type: EventType, chunk_idx: int) -> None:
+        if self._done_flags[event_type][chunk_idx]:
+            raise ValueError(f"chunk_idx '{chunk_idx}' already marked as done")
+        
+        self._done_flags[event_type][chunk_idx] = True
+        cond_var = self._cond_vars[event_type][chunk_idx]
+        with cond_var:
+            cond_var.notify()
+    
+    def put(self, deltas: list[UpdateDelta], event_type: EventType, chunk_idx: int) -> None:
+        if chunk_idx >= self._num_chunks:
+            raise ValueError(f"chunk_idx '{chunk_idx}' out of bounds")
+        
+        if self._done_flags[event_type][chunk_idx]:
+            raise ValueError(f"Attempted to put item into queue marked as done")
+        
+        self._queues[event_type][chunk_idx].extend(deltas)
+
+        cond_var = self._cond_vars[event_type][chunk_idx]
+        with cond_var:
+            cond_var.notify()
+
+    def _get_next_event_type(self) -> Optional[EventType]:
+        if self.empty():
+            return None
+        
+        order_delta_queue = self._queues[EventType.ORDER][self._cur_chunk]
+        exec_delta_queue = self._queues[EventType.EXECUTION][self._cur_chunk]
+
+        order_cond_var = self._cond_vars[EventType.ORDER][self._cur_chunk]
+        exec_cond_var = self._cond_vars[EventType.EXECUTION][self._cur_chunk]
+        
+        order_event = UpdateDelta(OrderSide.ASK, sys.maxsize, 0.0, 0.0, 0.0)
+        exec_event = UpdateDelta(OrderSide.ASK, sys.maxsize, 0.0, 0.0, 0.0)
+
+        if order_delta_queue:
+            order_event = order_delta_queue[0]
+        elif not self._done_flags[EventType.ORDER][self._cur_chunk]:
+            with order_cond_var:
+                order_cond_var.wait_for(lambda: len(order_delta_queue) or self._done_flags[EventType.ORDER][self._cur_chunk])
+
+            if not self._done_flags[EventType.ORDER][self._cur_chunk]:
+                order_event = order_delta_queue[0]
+
+        if exec_delta_queue:
+            exec_event = exec_delta_queue[0]
+        elif not self._done_flags[EventType.EXECUTION][self._cur_chunk]:
+            with exec_cond_var:
+                exec_cond_var.wait_for(lambda: len(exec_delta_queue) or self._done_flags[EventType.EXECUTION][self._cur_chunk])
+
+            if not self._done_flags[EventType.EXECUTION][self._cur_chunk]:
+                exec_event = exec_delta_queue[0]
+
+        if self._done_flags[EventType.ORDER][self._cur_chunk] and self._done_flags[EventType.EXECUTION][self._cur_chunk] and not order_delta_queue and not exec_delta_queue:
+            self._cur_chunk += 1
+            return self._get_next_event_type()
+
+        if order_event.timestamp < exec_event.timestamp:
+            return EventType.ORDER
+        
+        return EventType.EXECUTION
+
+    def peek(self) -> UpdateDelta:
+        next_event_type = self._get_next_event_type()
+
+        if next_event_type is None:
+            return None
+        
+        return self._queues[next_event_type][self._cur_chunk][0]
+        
+    
+    def get(self) -> UpdateDelta:
+        next_event_type = self._get_next_event_type()
+
+        if next_event_type is None:
+            return None
+        
+        return self._queues[next_event_type][self._cur_chunk].popleft()
