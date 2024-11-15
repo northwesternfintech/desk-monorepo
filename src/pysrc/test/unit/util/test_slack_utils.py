@@ -48,7 +48,6 @@ def test_get_user_if_valid(mock_get_users: MagicMock) -> None:
 
 @patch("pysrc.util.slack_utils._get_users")
 def test_get_slack_id_by_name(mock_get_users: MagicMock) -> None:
-    # Test user search
     mock_users = [
         {
             "id": "U12345",
@@ -82,7 +81,6 @@ def test_get_slack_id_by_name(mock_get_users: MagicMock) -> None:
     result = get_slack_id_by_name(mock_client, "alice")
     assert result is None
 
-    # Test channel search
     mock_channels = [
         {
             "id": "C12345",
@@ -109,6 +107,5 @@ def test_get_slack_id_by_name(mock_get_users: MagicMock) -> None:
     result = get_slack_id_by_name(mock_client, "general", search_type="channel")
     assert result is None
 
-    # Test invalid search type
     result = get_slack_id_by_name(mock_client, "general", search_type="invalid")
     assert result is None
