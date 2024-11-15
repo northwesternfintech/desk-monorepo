@@ -20,13 +20,13 @@ test: lint unit
 ci: test integration
 
 lint:
-	poetry run mypy .
-	poetry run ruff check .
-	poetry run ruff format --check
+	poetry run mypy src
+	poetry run ruff check src
+	poetry run ruff format --check src
 
 format:
-	poetry run ruff format
-	poetry run ruff check --fix
+	poetry run ruff format src
+	poetry run ruff check --fix src
 
 unit:
 	poetry run pytest src/pysrc/test/unit
