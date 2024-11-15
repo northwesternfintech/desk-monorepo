@@ -36,14 +36,13 @@ format:
 	find src -name '*.cpp' -o -name '*.hpp' | xargs clang-format --style=file -i
 	run-clang-tidy -fix -j $(shell nproc) -p build
 
-
 unit:
 	poetry run pytest src/pysrc/test/unit
 
-cpptest: test-backtester
-
 integration:
 	poetry run pytest src/pysrc/test/integration
+
+cpptest: build test-backtester
 
 test-backtester:
 	cd build && ./backtester_tests

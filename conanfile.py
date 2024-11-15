@@ -2,7 +2,7 @@ from conan import ConanFile
 from conan.tools.cmake import cmake_layout
 
 
-class ServicesRecipe(ConanFile):
+class DeskRecipe(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeDeps", "CMakeToolchain"
 

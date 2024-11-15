@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  lint-and-type-check-py:
+  python-lint-and-type-check:
     runs-on: ubuntu-latest
 
     steps:
