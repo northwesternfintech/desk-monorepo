@@ -5,11 +5,17 @@ from pysrc.signal.base_feature_generator import BaseFeatureGenerator
 
 class OHLCFeatureGenerator(BaseFeatureGenerator):
     def __init__(self) -> None:
-        self.ohlc_data = {}
+        self.ohlc_data: dict[Asset, dict[str, float]] = {}
 
     def calculate_ohlc(self, trades: list[TradeMessage]) -> dict[str, float]:
         if not trades:
-            return {"open": None, "high": None, "low": None, "close": None}
+            # Return NaNs for missing values
+            return {
+                "open": float("nan"),
+                "high": float("nan"),
+                "low": float("nan"),
+                "close": float("nan"),
+            }
 
         prices = [trade.price for trade in trades]
 
@@ -21,11 +27,14 @@ class OHLCFeatureGenerator(BaseFeatureGenerator):
         }
 
     def on_tick(
-        self, snapshots: dict[str, SnapshotMessage], trades: dict[Asset, list[TradeMessage]]
+        self, snapshots: dict[str, SnapshotMessage], trades: dict[str, TradeMessage]
     ) -> dict[Asset, dict[str, list[float]]]:
-        result = {}
+        result: dict[Asset, dict[str, list[float]]] = {}
 
-        for asset, trade_list in trades.items():
+        for asset_str, trade in trades.items():
+            asset = Asset(asset_str)
+            trade_list = [trade]
+
             if trade_list:
                 ohlc_values = self.calculate_ohlc(trade_list)
                 result[asset] = {
@@ -36,10 +45,10 @@ class OHLCFeatureGenerator(BaseFeatureGenerator):
                 }
             else:
                 result[asset] = {
-                    "open": [None],
-                    "high": [None],
-                    "low": [None],
-                    "close": [None],
+                    "open": [float("nan")],
+                    "high": [float("nan")],
+                    "low": [float("nan")],
+                    "close": [float("nan")],
                 }
 
         return result

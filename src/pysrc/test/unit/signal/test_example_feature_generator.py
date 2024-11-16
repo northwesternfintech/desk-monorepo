@@ -1,15 +1,15 @@
 import pytest
 from pysrc.adapters.messages import TradeMessage
-from pysrc.util.types import Asset, OrderSide, Market
+from pysrc.util.types import OrderSide, Market
 from pysrc.signal.example_feature_generator import OHLCFeatureGenerator
 
 
 @pytest.fixture
-def generator():
+def generator() -> OHLCFeatureGenerator:
     return OHLCFeatureGenerator()
 
 
-def test_ohlc_with_single_trade(generator):
+def test_ohlc_with_single_trade(generator: OHLCFeatureGenerator) -> None:
     trade = TradeMessage(
         time=1234567890,
         price=100.0,
@@ -19,11 +19,11 @@ def test_ohlc_with_single_trade(generator):
         side=OrderSide.BID,
         market=Market.KRAKEN_SPOT,
     )
-    trades = {Asset.BTC: [trade]}
+    trades: dict[str, TradeMessage] = {"BTC/USD": trade}
     result = generator.on_tick({}, trades)
 
     expected = {
-        Asset.BTC: {
+        "BTC/USD": {
             "open": [100.0],
             "high": [100.0],
             "low": [100.0],
@@ -33,51 +33,22 @@ def test_ohlc_with_single_trade(generator):
     assert result == expected
 
 
-def test_ohlc_with_multiple_trades(generator):
-    trades = {
-        Asset.BTC: [
-            TradeMessage(
-                time=1234567890,
-                price=100.0,
-                quantity=10,
-                feedcode="BTC/USD",
-                n_trades=1,
-                side=OrderSide.BID,
-                market=Market.KRAKEN_SPOT,
-            ),
-            TradeMessage(
-                time=1234567891,
-                price=105.0,
-                quantity=5,
-                feedcode="BTC/USD",
-                n_trades=1,
-                side=OrderSide.BID,
-                market=Market.KRAKEN_SPOT,
-            ),
-            TradeMessage(
-                time=1234567892,
-                price=95.0,
-                quantity=8,
-                feedcode="BTC/USD",
-                n_trades=1,
-                side=OrderSide.BID,
-                market=Market.KRAKEN_SPOT,
-            ),
-            TradeMessage(
-                time=1234567893,
-                price=102.0,
-                quantity=7,
-                feedcode="BTC/USD",
-                n_trades=1,
-                side=OrderSide.BID,
-                market=Market.KRAKEN_SPOT,
-            ),
-        ]
+def test_ohlc_with_multiple_trades(generator: OHLCFeatureGenerator) -> None:
+    trades: dict[str, TradeMessage] = {
+        "BTC/USD": TradeMessage(
+            time=1234567890,
+            price=100.0,
+            quantity=10,
+            feedcode="BTC/USD",
+            n_trades=1,
+            side=OrderSide.BID,
+            market=Market.KRAKEN_SPOT,
+        )
     }
     result = generator.on_tick({}, trades)
 
     expected = {
-        Asset.BTC: {
+        "BTC/USD": {
             "open": [100.0],
             "high": [105.0],
             "low": [95.0],
@@ -87,87 +58,49 @@ def test_ohlc_with_multiple_trades(generator):
     assert result == expected
 
 
-def test_ohlc_with_empty_trades(generator):
-    trades = {Asset.BTC: []}
+def test_ohlc_with_empty_trades(generator: OHLCFeatureGenerator) -> None:
+    trades: dict[str, TradeMessage] = {}
     result = generator.on_tick({}, trades)
 
-    expected = {
-        Asset.BTC: {
-            "open": [None],
-            "high": [None],
-            "low": [None],
-            "close": [None],
-        }
-    }
+    expected = {}
     assert result == expected
 
 
-def test_ohlc_with_multiple_assets(generator):
-    trades = {
-        Asset.BTC: [
-            TradeMessage(
-                time=1234567890,
-                price=100.0,
-                quantity=10,
-                feedcode="BTC/USD",
-                n_trades=1,
-                side=OrderSide.BID,
-                market=Market.KRAKEN_SPOT,
-            ),
-            TradeMessage(
-                time=1234567891,
-                price=105.0,
-                quantity=5,
-                feedcode="BTC/USD",
-                n_trades=1,
-                side=OrderSide.BID,
-                market=Market.KRAKEN_SPOT,
-            ),
-        ],
-        Asset.ETH: [
-            TradeMessage(
-                time=1234567892,
-                price=200.0,
-                quantity=10,
-                feedcode="ETH/USD",
-                n_trades=1,
-                side=OrderSide.BID,
-                market=Market.KRAKEN_SPOT,
-            ),
-            TradeMessage(
-                time=1234567893,
-                price=195.0,
-                quantity=8,
-                feedcode="ETH/USD",
-                n_trades=1,
-                side=OrderSide.BID,
-                market=Market.KRAKEN_SPOT,
-            ),
-            TradeMessage(
-                time=1234567894,
-                price=210.0,
-                quantity=5,
-                feedcode="ETH/USD",
-                n_trades=1,
-                side=OrderSide.BID,
-                market=Market.KRAKEN_SPOT,
-            ),
-        ],
+def test_ohlc_with_multiple_assets(generator: OHLCFeatureGenerator) -> None:
+    trades: dict[str, TradeMessage] = {
+        "BTC/USD": TradeMessage(
+            time=1234567890,
+            price=100.0,
+            quantity=10,
+            feedcode="BTC/USD",
+            n_trades=1,
+            side=OrderSide.BID,
+            market=Market.KRAKEN_SPOT,
+        ),
+        "ETH/USD": TradeMessage(
+            time=1234567892,
+            price=200.0,
+            quantity=10,
+            feedcode="ETH/USD",
+            n_trades=1,
+            side=OrderSide.BID,
+            market=Market.KRAKEN_SPOT,
+        ),
     }
     result = generator.on_tick({}, trades)
 
     expected = {
-        Asset.BTC: {
+        "BTC/USD": {
             "open": [100.0],
-            "high": [105.0],
+            "high": [100.0],
             "low": [100.0],
-            "close": [105.0],
+            "close": [100.0],
         },
-        Asset.ETH: {
+        "ETH/USD": {
             "open": [200.0],
-            "high": [210.0],
-            "low": [195.0],
-            "close": [210.0],
+            "high": [200.0],
+            "low": [200.0],
+            "close": [200.0],
         },
     }
     assert result == expected
