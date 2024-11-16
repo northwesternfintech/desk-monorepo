@@ -31,11 +31,12 @@ class HistoricalUpdatesDataClient:
         self._resource_path = resource_path
         self._session = requests.Session()
 
-        self._queue = ChunkedEventQueue(num_chunks=1)
+        self._queue = ChunkedEventQueue(num_chunks=24)
 
         self._cur_sec = -1
 
         self._zstd_options = {CParameter.compressionLevel: 10}
+        self._decompress_buffer = b''
 
     def _request(self, route: str, params: dict[str, Any]) -> Any:
         res = self._session.get(route, params=params)
@@ -159,10 +160,12 @@ class HistoricalUpdatesDataClient:
             continuation_token=res.get("continuationToken"), deltas=deltas
         )
 
-    def _queue_events_for_day(
+    def _queue_events_for_chunk(
         self,
         asset: str,
-        day: datetime,
+        since: datetime,
+        until: datetime,
+        chunk_idx: int,
         event_type: EventType,
     ) -> None:
         match event_type:
@@ -171,8 +174,8 @@ class HistoricalUpdatesDataClient:
             case EventType.EXECUTION:
                 get_events_func = self._get_execution_events
 
-        since_time = int(day.timestamp() * 1000)
-        before_time = int((day + timedelta(hours=2)).timestamp() * 1000)
+        since_time = int(since.timestamp() * 1000)
+        before_time = int(until.timestamp() * 1000)
 
         continuation_token = None
         while True:
@@ -183,20 +186,20 @@ class HistoricalUpdatesDataClient:
                 continuation_token=continuation_token,
             )
 
-            self._queue.put(order_res.deltas, event_type, 0)
+            self._queue.put(order_res.deltas, event_type, chunk_idx)
 
             continuation_token = order_res.continuation_token
             if not continuation_token:
                 break
 
-        self._queue.mark_done(event_type, 0)
+        self._queue.mark_done(event_type, chunk_idx)
 
     def _compute_next_snapshot(self) -> Optional[SnapshotMessage]:
         is_last_iter = not self._queue.empty()
 
         while True:
             next_delta = self._queue.peek()
-            
+
             if next_delta is None:
                 break
 
@@ -223,26 +226,47 @@ class HistoricalUpdatesDataClient:
         compressor = ZstdCompressor(level_or_option=self._zstd_options)
         f = open(file_path, "wb")
 
-        order_thread = Thread(
-            target=self._queue_events_for_day, args=(asset, day, EventType.ORDER)
-        )
-        order_thread.start()
+        threads = []
+        for i in range(24):
+            order_thread = Thread(
+                target=self._queue_events_for_chunk,
+                args=(
+                    asset,
+                    day + timedelta(hours=i),
+                    day + timedelta(hours=i + 1),
+                    i,
+                    EventType.ORDER
+                )
+            )
 
-        exec_thread = Thread(
-            target=self._queue_events_for_day, args=(asset, day, EventType.EXECUTION)
-        )
-        exec_thread.start()
+            exec_thread = Thread(
+                target=self._queue_events_for_chunk,
+                args=(
+                    asset,
+                    day + timedelta(hours=i),
+                    day + timedelta(hours=i + 1),
+                    i,
+                    EventType.EXECUTION
+                )
+            )
+
+            threads.append(order_thread)
+            threads.append(exec_thread)
+
+        for thread in threads:
+            thread.start()
 
         snapshot = self._compute_next_snapshot()
         while snapshot:
             f.write(compressor.compress(snapshot.to_bytes()))
             snapshot = self._compute_next_snapshot()
 
-        order_thread.join()
-        exec_thread.join()
-
         f.write(compressor.flush())
         f.close()
+
+        for thread in threads:
+            thread.join()
+        
 
     def download_updates(
         self, asset: str, since: datetime, until: Optional[datetime] = None
@@ -258,16 +282,14 @@ class HistoricalUpdatesDataClient:
             cur = since + timedelta(days=i)
 
             self._mbp_book = MBPBook(feedcode=asset, market=Market.KRAKEN_USD_FUTURE)
-            self._queue = ChunkedEventQueue(num_chunks=1)
+            self._queue = ChunkedEventQueue(num_chunks=24)
             self._cur_sec = int(cur.timestamp())
             self._compute_updates_for_day(asset, cur)
 
     def _decompress_bytes(
         self, decompressor: EndlessZstdDecompressor, f: BufferedIOBase, output_size: int
     ) -> bytes:
-        out = b""
-
-        while len(out) < output_size:
+        while len(self._decompress_buffer) < output_size:
             if decompressor.needs_input:
                 f_data = f.read(1024**2)
 
@@ -276,7 +298,10 @@ class HistoricalUpdatesDataClient:
             else:
                 f_data = b""
 
-            out += decompressor.decompress(f_data, max_length=output_size)
+            self._decompress_buffer += decompressor.decompress(f_data, max_length=output_size)
+
+        out = self._decompress_buffer[:output_size]
+        self._decompress_buffer = self._decompress_buffer[output_size:]
 
         return out
 
@@ -294,16 +319,16 @@ class HistoricalUpdatesDataClient:
         )
 
         feedcode_data = self._decompress_bytes(decompressor, f, feedcode_size)
-        if len(feedcode_data) < feedcode_size:
+        if len(feedcode_data) != feedcode_size:
             raise ValueError("Failed to read feedcode from stream")
 
         bids_bytes = self._decompress_bytes(decompressor, f, bids_size)
-        if len(bids_bytes) < bids_size:
+        if len(bids_bytes) != bids_size:
             raise ValueError("Failed to read bids from stream")
         bids = np.frombuffer(bids_bytes)
 
         asks_bytes = self._decompress_bytes(decompressor, f, asks_size)
-        if len(asks_bytes) < asks_size:
+        if len(asks_bytes) != asks_size:
             raise ValueError("Failed to read asks from stream")
         asks = np.frombuffer(asks_bytes)
 

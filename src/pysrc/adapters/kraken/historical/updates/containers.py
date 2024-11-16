@@ -110,6 +110,9 @@ class ChunkedEventQueue:
         if self._done_flags[event_type][chunk_idx]:
             raise ValueError(f"chunk_idx '{chunk_idx}' already marked as done")
         
+        d = self._queues[event_type][chunk_idx]
+        self._queues[event_type][chunk_idx] = deque(sorted(d, key=lambda x: x.timestamp))
+        
         self._done_flags[event_type][chunk_idx] = True
         cond_var = self._cond_vars[event_type][chunk_idx]
         with cond_var:
@@ -132,34 +135,28 @@ class ChunkedEventQueue:
         if self.empty():
             return None
         
-        order_delta_queue = self._queues[EventType.ORDER][self._cur_chunk]
-        exec_delta_queue = self._queues[EventType.EXECUTION][self._cur_chunk]
-
         order_cond_var = self._cond_vars[EventType.ORDER][self._cur_chunk]
         exec_cond_var = self._cond_vars[EventType.EXECUTION][self._cur_chunk]
+        
+        with order_cond_var:
+            order_cond_var.wait_for(lambda: self._done_flags[EventType.ORDER][self._cur_chunk])
+
+        with exec_cond_var:
+            exec_cond_var.wait_for(lambda: self._done_flags[EventType.EXECUTION][self._cur_chunk])
+        
+        order_delta_queue = self._queues[EventType.ORDER][self._cur_chunk]
+        exec_delta_queue = self._queues[EventType.EXECUTION][self._cur_chunk]
         
         order_event = UpdateDelta(OrderSide.ASK, sys.maxsize, 0.0, 0.0, 0.0)
         exec_event = UpdateDelta(OrderSide.ASK, sys.maxsize, 0.0, 0.0, 0.0)
 
         if order_delta_queue:
             order_event = order_delta_queue[0]
-        elif not self._done_flags[EventType.ORDER][self._cur_chunk]:
-            with order_cond_var:
-                order_cond_var.wait_for(lambda: len(order_delta_queue) or self._done_flags[EventType.ORDER][self._cur_chunk])
-
-            if order_delta_queue:
-                order_event = order_delta_queue[0]
 
         if exec_delta_queue:
             exec_event = exec_delta_queue[0]
-        elif not self._done_flags[EventType.EXECUTION][self._cur_chunk]:
-            with exec_cond_var:
-                exec_cond_var.wait_for(lambda: len(exec_delta_queue) or self._done_flags[EventType.EXECUTION][self._cur_chunk])
 
-            if exec_delta_queue:
-                exec_event = exec_delta_queue[0]
-
-        if self._done_flags[EventType.ORDER][self._cur_chunk] and self._done_flags[EventType.EXECUTION][self._cur_chunk] and not order_delta_queue and not exec_delta_queue:
+        if not order_delta_queue and not exec_delta_queue:
             self._cur_chunk += 1
             return self._get_next_event_type()
 
@@ -167,6 +164,7 @@ class ChunkedEventQueue:
             return EventType.ORDER
         
         return EventType.EXECUTION
+
 
     def peek(self) -> UpdateDelta:
         next_event_type = self._get_next_event_type()

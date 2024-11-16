@@ -298,7 +298,7 @@ def test_queue_events_for_day(
     order_return_val["continuationToken"] = None
     mock_make_request.return_value = order_return_val
 
-    client._queue_events_for_day("", datetime(year=2024, month=11, day=5), EventType.ORDER)
+    client._queue_events_for_chunk("", datetime(year=2024, month=11, day=5), datetime(year=2024, month=11, day=5), 0, EventType.ORDER)
 
     assert client._queue._done_flags[EventType.ORDER][0]
     assert len(client._queue._queues[EventType.ORDER][0]) == 4
@@ -306,7 +306,7 @@ def test_queue_events_for_day(
 
     client._queue._cond_vars[EventType.EXECUTION][0] = MagicMock()
     mock_make_request.return_value = EXECUTION_EVENTS
-    client._queue_events_for_day("", datetime(year=2024, month=11, day=5), EventType.EXECUTION)
+    client._queue_events_for_chunk("", datetime(year=2024, month=11, day=5), datetime(year=2024, month=11, day=5), 0, EventType.EXECUTION)
     assert client._queue._done_flags[EventType.EXECUTION][0]
     assert len(client._queue._queues[EventType.EXECUTION][0]) == 2
     client._queue._cond_vars[EventType.EXECUTION][0].notify.assert_called()
