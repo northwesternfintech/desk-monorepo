@@ -1,4 +1,4 @@
-name: CI - Unit Tests
+name: CI - Python Unit Tests
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  unit-tests:
+  python-unit-tests:
     runs-on: ubuntu-latest
   
     steps:
