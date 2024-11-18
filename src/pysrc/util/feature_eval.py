@@ -1,4 +1,7 @@
-from pysrc.adapters.kraken.historical.historical_data_client import HistoricalDataClient
+from pysrc.adapters.kraken.historical.historical_data_client import (
+    HistoricalUpdatesDataClient,
+    HistoricalDataClient
+)
 from datetime import datetime
 from dateutil.rrule import rrule, DAILY
 from pysrc.util.types import TradeMessage, Asset
@@ -19,18 +22,21 @@ class Evaluator:
         hist_client = HistoricalDataClient()
         res = []
         for date in rrule(DAILY, dtstart=start, until=end):
-            res.extend(hist_client.get_trades(self.coin, date, ""))
-        return res
+            res.extend(hist_client.get_trades(self.asset, date, ""))
+
+        update_client = HistoricalUpdatesDataClient()
+        generator = update_client.stream_updates(self.asset, start, end)
+        return zip(res, generator)
 
     def calculate_features(self) -> dict[str, list[float]]:
-        trades = self._get_data_daterange(self.start, self.end)
-        # ^ this returns a list[TradeMessage], but on_tick expects dict[str, TradeMessage]
-        # What is key?
-        snapshots = {}
-        # ^ how to get snapshots?
+        data = self._get_data_daterange(self.start, self.end)
         generator_client = BaseFeatureGenerator()
-        feature_dict = generator_client.on_tick(snapshots, trades)
-        return feature_dict[self.asset]
+        feature_dict = dict.fromkeys(self.features, [])
+        for trade, snapshot in data:
+            features = generator_client.on_tick(snapshot, trade)
+            for feature in self.features:
+                feature_dict[feature].extend(features[self.asset][feature])
+        return feature_dict
 
     # Suppose that returns is passed to evaluate_features
     def evaluate_features(self, target: list[float]):
