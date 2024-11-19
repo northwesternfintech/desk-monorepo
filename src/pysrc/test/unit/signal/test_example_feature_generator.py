@@ -1,106 +1,158 @@
 import pytest
-from pysrc.adapters.messages import TradeMessage
-from pysrc.util.types import OrderSide, Market
-from pysrc.signal.example_feature_generator import OHLCFeatureGenerator
+from pysrc.signal.example_feature_generator import ExampleFeatureGenerator
+from pysrc.adapters.messages import TradeMessage, SnapshotMessage
+from pysrc.util.types import Asset, OrderSide, Market
 
 
-@pytest.fixture
-def generator() -> OHLCFeatureGenerator:
-    return OHLCFeatureGenerator()
+def test_compute_ohlc_no_trades() -> None:
+    generator = ExampleFeatureGenerator()
+    features = generator.compute_ohlc([])
+    assert features == [0.0, 0.0, 0.0, 0.0]
 
 
-def test_ohlc_with_single_trade(generator: OHLCFeatureGenerator) -> None:
+def test_compute_ohlc_single_trade() -> None:
+    generator = ExampleFeatureGenerator()
     trade = TradeMessage(
-        time=1234567890,
-        price=100.0,
-        quantity=10,
-        feedcode="BTC/USD",
+        time=1,
+        feedcode="BTC",
         n_trades=1,
+        price=100.0,
+        quantity=0.5,
         side=OrderSide.BID,
         market=Market.KRAKEN_SPOT,
     )
-    trades: dict[str, TradeMessage] = {"BTC/USD": trade}
-    result = generator.on_tick({}, trades)
-
-    expected = {
-        "BTC/USD": {
-            "open": [100.0],
-            "high": [100.0],
-            "low": [100.0],
-            "close": [100.0],
-        }
-    }
-    assert result == expected
+    features = generator.compute_ohlc([trade])
+    assert features == [100.0, 100.0, 100.0, 100.0]
 
 
-def test_ohlc_with_multiple_trades(generator: OHLCFeatureGenerator) -> None:
-    trades: dict[str, TradeMessage] = {
-        "BTC/USD": TradeMessage(
-            time=1234567890,
-            price=100.0,
-            quantity=10,
-            feedcode="BTC/USD",
+def test_compute_ohlc_multiple_trades() -> None:
+    generator = ExampleFeatureGenerator()
+    trades = [
+        TradeMessage(
+            time=1,
+            feedcode="BTC",
             n_trades=1,
-            side=OrderSide.BID,
-            market=Market.KRAKEN_SPOT,
-        )
-    }
-    result = generator.on_tick({}, trades)
-
-    expected = {
-        "BTC/USD": {
-            "open": [100.0],
-            "high": [105.0],
-            "low": [95.0],
-            "close": [102.0],
-        }
-    }
-    assert result == expected
-
-
-def test_ohlc_with_empty_trades(generator: OHLCFeatureGenerator) -> None:
-    trades: dict[str, TradeMessage] = {}
-    result = generator.on_tick({}, trades)
-
-    expected = {}
-    assert result == expected
-
-
-def test_ohlc_with_multiple_assets(generator: OHLCFeatureGenerator) -> None:
-    trades: dict[str, TradeMessage] = {
-        "BTC/USD": TradeMessage(
-            time=1234567890,
             price=100.0,
-            quantity=10,
-            feedcode="BTC/USD",
-            n_trades=1,
+            quantity=0.5,
             side=OrderSide.BID,
             market=Market.KRAKEN_SPOT,
         ),
-        "ETH/USD": TradeMessage(
-            time=1234567892,
-            price=200.0,
-            quantity=10,
-            feedcode="ETH/USD",
+        TradeMessage(
+            time=2,
+            feedcode="BTC",
             n_trades=1,
+            price=105.0,
+            quantity=0.3,
+            side=OrderSide.ASK,
+            market=Market.KRAKEN_SPOT,
+        ),
+        TradeMessage(
+            time=3,
+            feedcode="BTC",
+            n_trades=1,
+            price=95.0,
+            quantity=0.2,
             side=OrderSide.BID,
             market=Market.KRAKEN_SPOT,
         ),
-    }
-    result = generator.on_tick({}, trades)
+        TradeMessage(
+            time=4,
+            feedcode="BTC",
+            n_trades=1,
+            price=102.0,
+            quantity=0.4,
+            side=OrderSide.ASK,
+            market=Market.KRAKEN_SPOT,
+        ),
+    ]
+    features = generator.compute_ohlc(trades)
+    expected_features = [100.0, 105.0, 95.0, 102.0]
+    assert features == expected_features
 
-    expected = {
-        "BTC/USD": {
-            "open": [100.0],
-            "high": [100.0],
-            "low": [100.0],
-            "close": [100.0],
-        },
-        "ETH/USD": {
-            "open": [200.0],
-            "high": [200.0],
-            "low": [200.0],
-            "close": [200.0],
-        },
+
+def test_on_tick() -> None:
+    generator = ExampleFeatureGenerator()
+    trades = {
+        "BTC": [
+            TradeMessage(
+                time=1,
+                feedcode="BTC",
+                n_trades=1,
+                price=100.0,
+                quantity=0.5,
+                side=OrderSide.BID,
+                market=Market.KRAKEN_SPOT,
+            ),
+            TradeMessage(
+                time=2,
+                feedcode="BTC",
+                n_trades=1,
+                price=105.0,
+                quantity=0.3,
+                side=OrderSide.ASK,
+                market=Market.KRAKEN_SPOT,
+            ),
+        ],
+        "ETH": [
+            TradeMessage(
+                time=1,
+                feedcode="ETH",
+                n_trades=1,
+                price=200.0,
+                quantity=1.0,
+                side=OrderSide.BID,
+                market=Market.KRAKEN_SPOT,
+            ),
+            TradeMessage(
+                time=2,
+                feedcode="ETH",
+                n_trades=1,
+                price=210.0,
+                quantity=0.8,
+                side=OrderSide.ASK,
+                market=Market.KRAKEN_SPOT,
+            ),
+            TradeMessage(
+                time=3,
+                feedcode="ETH",
+                n_trades=1,
+                price=190.0,
+                quantity=0.5,
+                side=OrderSide.BID,
+                market=Market.KRAKEN_SPOT,
+            ),
+        ],
     }
-    assert result == expected
+    snapshots: dict[str, SnapshotMessage] = {}
+    output = generator.on_tick(snapshots, trades)
+
+    assert output[Asset.BTC]["features"] == [100.0, 105.0, 100.0, 105.0]
+    assert output[Asset.ETH]["features"] == [200.0, 210.0, 190.0, 190.0]
+
+    assert output[Asset.ADA]["features"] == [0.0, 0.0, 0.0, 0.0]
+    assert output[Asset.SOL]["features"] == [0.0, 0.0, 0.0, 0.0]
+    assert output[Asset.DOGE]["features"] == [0.0, 0.0, 0.0, 0.0]
+
+    for asset in generator.assets:
+        assert len(output[asset]["features"]) == len(generator.orderFeatures)
+
+
+def test_feature_order_consistency() -> None:
+    generator = ExampleFeatureGenerator()
+    trades = {
+        "BTC": [
+            TradeMessage(
+                time=1,
+                feedcode="BTC",
+                n_trades=1,
+                price=100.0,
+                quantity=0.5,
+                side=OrderSide.BID,
+                market=Market.KRAKEN_SPOT,
+            ),
+        ],
+    }
+    snapshots: dict[str, SnapshotMessage] = {}
+    output = generator.on_tick(snapshots, trades)
+    features = output[Asset.BTC]["features"]
+    assert features == [100.0, 100.0, 100.0, 100.0]
