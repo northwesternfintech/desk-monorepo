@@ -1,6 +1,5 @@
 import numpy as np
 from collections import deque
-import time
 
 from pysrc.util.types import Asset
 from pysrc.adapters.kraken.spot.kraken_client import KrakenClient
