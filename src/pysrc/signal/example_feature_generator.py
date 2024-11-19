@@ -1,7 +1,7 @@
 from pysrc.adapters.messages import SnapshotMessage, TradeMessage
 from pysrc.util.types import Asset
 from pysrc.signal.base_feature_generator import BaseFeatureGenerator
-
+from typing import override
 
 class ExampleFeatureGenerator(BaseFeatureGenerator):
     order_features = ["open", "high", "low", "close"]
@@ -20,6 +20,7 @@ class ExampleFeatureGenerator(BaseFeatureGenerator):
         close_price = prices[-1]
         return [open_price, high_price, low_price, close_price]
 
+    @override
     def on_tick(
         self,
         snapshots: dict[str, SnapshotMessage],
