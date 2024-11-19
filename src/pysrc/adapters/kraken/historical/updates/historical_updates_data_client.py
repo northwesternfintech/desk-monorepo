@@ -42,7 +42,6 @@ class HistoricalUpdatesDataClient:
         self._decompress_buffer = b''
 
     def _request(self, route: str, params: dict[str, Any]) -> Any:
-        raise ValueError()
         res = self._session.get(route, params=params)
         if res.status_code != 200:
             raise ValueError(f"Failed to get from '{route}', received {res.text}")

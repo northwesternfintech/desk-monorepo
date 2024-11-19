@@ -309,7 +309,7 @@ def test_get_execution_events(
 def test_queue_events_for_day(
     mock_make_request: MagicMock, client: HistoricalUpdatesDataClient
 ) -> None:
-    client._queue._cond_vars[EventType.ORDER][0] = MagicMock()
+    client._queue._cond_var = MagicMock()
     order_return_val = ORDER_EVENTS.copy()
     order_return_val["continuationToken"] = None
     mock_make_request.return_value = order_return_val
@@ -317,15 +317,20 @@ def test_queue_events_for_day(
     client._queue_events_for_chunk("", datetime(year=2024, month=11, day=5), datetime(year=2024, month=11, day=5), 0, EventType.ORDER)
 
     assert client._queue._statuses[EventType.ORDER][0]
-    assert len(client._queue._queues[EventType.ORDER][0]) == 4
-    client._queue._cond_vars[EventType.ORDER][0].notify.assert_called()
+    assert len(client._queue._chunks[0]) == 4
+    client._queue._cond_var.notify.assert_called()
 
-    client._queue._cond_vars[EventType.EXECUTION][0] = MagicMock()
+    client._queue._cond_var = MagicMock()
     mock_make_request.return_value = EXECUTION_EVENTS
     client._queue_events_for_chunk("", datetime(year=2024, month=11, day=5), datetime(year=2024, month=11, day=5), 0, EventType.EXECUTION)
     assert client._queue._statuses[EventType.EXECUTION][0]
-    assert len(client._queue._queues[EventType.EXECUTION][0]) == 2
-    client._queue._cond_vars[EventType.EXECUTION][0].notify.assert_called()
+    assert len(client._queue._chunks[0]) == 6
+    client._queue._cond_var.notify.assert_called()
+
+    client._queue.peek()
+    assert len(client._queue._queue) == 6
+    assert not (client._queue.empty() or client._queue.failed())
+    assert client._queue._cur_chunk == 1
 
 
 def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
@@ -380,8 +385,7 @@ def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
     assert (68717.5, -3000) in snapshot.bids
     assert (7, -8) in snapshot.bids
 
-    assert len(client._queue._queues[EventType.ORDER][0]) == 0
-    assert len(client._queue._queues[EventType.EXECUTION][0]) == 0
+    assert len(client._queue._queue) == 0
 
     snapshot = client._compute_next_snapshot()
     assert snapshot is None
