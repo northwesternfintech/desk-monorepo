@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from pyzstd import compress, decompress, CParameter, ZstdFile
 from typing import Optional, Generator
 
-from pysrc.file_handlers.kraken.historical.base_handler import BaseHandler
+from pysrc.data_handlers.kraken.historical.base_handler import BaseHandler
 from pysrc.adapters.messages import SnapshotMessage
 from pysrc.util.types import Market
 

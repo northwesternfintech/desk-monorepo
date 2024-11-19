@@ -3,11 +3,11 @@ import struct
 import os
 from io import BufferedIOBase
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import timedelta, date
 from pyzstd import compress, decompress, CParameter, ZstdFile, EndlessZstdDecompressor
 from typing import Optional, Generator
 
-from pysrc.file_handlers.kraken.historical.base_handler import BaseHandler
+from pysrc.data_handlers.kraken.historical.base_handler import BaseHandler
 from pysrc.adapters.kraken.historical.trades.historical_trades_data_client import HistoricalTradesDataClient
 from pysrc.adapters.messages import TradeMessage
 from pysrc.util.types import Market, OrderSide
@@ -98,7 +98,7 @@ class RawTradesHandler(BaseHandler):
     
 
     def stream_data(
-        self, asset: str, since: datetime, until: Optional[datetime]
+        self, asset: str, since: date, until: Optional[date]
     ) -> Generator[TradeMessage, None, None]:
         
         asset_path = self.resource_path / asset
@@ -106,7 +106,7 @@ class RawTradesHandler(BaseHandler):
             raise ValueError(f"No directory for `{asset}` found in resource path")
 
         if not until:
-            until = datetime.today()
+            until = date.today()
 
         file_paths = []
         for i in range((until - since).days):
@@ -146,7 +146,7 @@ class RawTradesHandler(BaseHandler):
     
 
     def stream_data_2(
-        self, asset: str, since: datetime, until: Optional[datetime]
+        self, asset: str, since: date, until: Optional[date]
     ) -> Generator[TradeMessage, None, None]:
         
         asset_path = self.resource_path / asset
@@ -154,7 +154,7 @@ class RawTradesHandler(BaseHandler):
             raise ValueError(f"No directory for `{asset}` found in resource path")
 
         if not until:
-            until = datetime.today()
+            until = date.today()
 
         file_paths = []
         for i in range((until - since).days):
@@ -205,8 +205,8 @@ def run_tests(asset: str) -> None:
     # Test stream_data()
     gen = handler.stream_data(
         asset,
-        datetime(year=2024, month=5, day=30),
-        until=datetime(year=2024, month=7, day=1),
+        date(year=2024, month=5, day=30),
+        until=date(year=2024, month=7, day=1),
     )
 
     i = 0
@@ -221,8 +221,8 @@ def run_tests(asset: str) -> None:
     # Test stream_data_2()
     gen = handler.stream_data_2(
         asset,
-        datetime(year=2024, month=5, day=30),
-        until=datetime(year=2024, month=7, day=1),
+        date(year=2024, month=5, day=30),
+        until=date(year=2024, month=7, day=1),
     )
 
     i = 0
@@ -242,14 +242,14 @@ def run_stream_test(asset: str, function: int) -> None:
     if function == 1:
         gen = handler.stream_data(
             asset,
-            datetime(year=2024, month=4, day=1),
-            until=datetime(year=2024, month=7, day=1),
+            date(year=2024, month=4, day=1),
+            until=date(year=2024, month=7, day=1),
         )
     elif function == 2:
         gen = handler.stream_data_2(
             asset,
-            datetime(year=2024, month=4, day=1),
-            until=datetime(year=2024, month=7, day=1),
+            date(year=2024, month=4, day=1),
+            until=date(year=2024, month=7, day=1),
         )
 
     print("Begin iterating")
