@@ -18,7 +18,6 @@ class TargetLogReturn:
         for _ in range(time_delay):
             snapshot = self._client.get_order_book(asset)
             self._buffer.append(snapshot)
-            time.sleep(1)
 
     def update(self, snapshot: SnapshotMessage) -> None:
         self._buffer.append(snapshot)

@@ -73,6 +73,28 @@ def test_next(asset: Asset, kraken_client_mock: KrakenClient) -> None:
         target = TargetLogReturn(time_delay=1, asset=asset)
         log_return = target.next()
         assert isinstance(log_return, float)
-        assert (
-            log_return == 0.0
+        assert log_return == 0.0
+
+
+def test_complicated_next(asset: Asset, kraken_client_mock: KrakenClient) -> None:
+    with patch(
+        "pysrc.targets.log_return.KrakenClient", return_value=kraken_client_mock
+    ):
+        target = TargetLogReturn(time_delay=50, asset=asset)
+        initial_snapshot = SnapshotMessage(
+            bids=[[10050.0, 1.0]],
+            asks=[[10100.0, 1.0]],
+            time=int(time.time()),
+            feedcode="BTCUSD",
+            market=Market.KRAKEN_SPOT,
         )
+        target.update(initial_snapshot)
+
+        for _ in range(48):
+            target.update(initial_snapshot)
+
+        log_return = target.next()
+        expected_log_return = np.log(10005.0 / 10075.0)
+
+        assert isinstance(log_return, float)
+        assert np.isclose(log_return, expected_log_return)
