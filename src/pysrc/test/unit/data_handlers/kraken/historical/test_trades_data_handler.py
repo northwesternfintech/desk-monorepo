@@ -15,15 +15,9 @@ def test_read_write_to_file() -> None:
     handler = TradesDataHandler(resource_path / "trades")
 
     trades = [
-        TradeMessage(
-            1, "BONKUSD", 1, 10.0, 1.0, OrderSide.BID, Market.KRAKEN_SPOT
-        ),
-        TradeMessage(
-            2, "BONKUSD", 1, 10.02, 0.5, OrderSide.BID, Market.KRAKEN_SPOT
-        ),
-        TradeMessage(
-            10, "BONKUSD", 1, 9.99, 1.5, OrderSide.BID, Market.KRAKEN_SPOT
-        )
+        TradeMessage(1, "BONKUSD", 1, 10.0, 1.0, OrderSide.BID, Market.KRAKEN_SPOT),
+        TradeMessage(2, "BONKUSD", 1, 10.02, 0.5, OrderSide.BID, Market.KRAKEN_SPOT),
+        TradeMessage(10, "BONKUSD", 1, 9.99, 1.5, OrderSide.BID, Market.KRAKEN_SPOT),
     ]
 
     test_file_path = resource_path / "trades" / "BONKUSD" / "test.bin"
@@ -46,17 +40,11 @@ def test_read_write_to_file() -> None:
 def test_stream_data() -> None:
     handler = TradesDataHandler(resource_path / "trades")
 
-    # client = HistoricalTradesDataClient()
-    # chuncked_files = client._chunk_csv_by_day(str(resource_path / "trades" / "AEVOEUR" / "AEVOEUR.csv"))
-    # for chunked_file in chuncked_files:
-    #     handler._serialize_csv(Path(chunked_file))
-    #     os.remove(chunked_file)
-
     csv_path = resource_path / "trades/AEVOEUR/AEVOEUR.csv"
     np_dtype = [("time", "u8"), ("price", "f4"), ("volume", "f4")]
     arr = np.loadtxt(csv_path, delimiter=",", dtype=np_dtype)
     assert arr.shape[0] == 1099
-    
+
     gen = handler.stream_data_2(
         "AEVOEUR",
         date(year=2024, month=5, day=30),

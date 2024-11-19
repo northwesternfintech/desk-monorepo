@@ -13,7 +13,7 @@ class BaseDataHandler(ABC):
     @abstractmethod
     def read_file(self, input_path: Path) -> list[TradeMessage] | list[SnapshotMessage]:
         raise NotImplementedError
-    
+
     @abstractmethod
     def write_to_file(self, output_path: Path, data: Any) -> None:
         raise NotImplementedError

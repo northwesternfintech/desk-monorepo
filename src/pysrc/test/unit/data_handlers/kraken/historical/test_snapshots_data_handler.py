@@ -5,7 +5,9 @@ import random
 from datetime import date
 
 from pysrc.test.helpers import get_resources_path
-from pysrc.data_handlers.kraken.historical.snapshots_data_handler import SnapshotsDataHandler
+from pysrc.data_handlers.kraken.historical.snapshots_data_handler import (
+    SnapshotsDataHandler,
+)
 from pysrc.adapters.messages import SnapshotMessage
 from pysrc.util.types import Market
 
@@ -65,8 +67,14 @@ def test_stream_data() -> None:
                 time=i,
                 feedcode="AEVOEUR",
                 market=Market.KRAKEN_USD_FUTURE,
-                bids=[(random.uniform(0, 100), random.uniform(0, 10)) for _ in range(i+1)],
-                asks=[(random.uniform(0, 100), random.uniform(0, 10)) for _ in range(i+2)],
+                bids=[
+                    [random.uniform(0, 100), random.uniform(0, 10)]
+                    for _ in range(i + 1)
+                ],
+                asks=[
+                    [random.uniform(0, 100), random.uniform(0, 10)]
+                    for _ in range(i + 2)
+                ],
             )
         )
 
@@ -84,7 +92,6 @@ def test_stream_data() -> None:
     handler.write_to_file(test_file_paths[3], [])
     handler.write_to_file(test_file_paths[4], snapshots[6:])
 
-    
     gen = handler.stream_data(
         "AEVOEUR",
         date(year=2024, month=11, day=11),
