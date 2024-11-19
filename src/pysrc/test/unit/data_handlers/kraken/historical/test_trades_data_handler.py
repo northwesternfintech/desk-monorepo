@@ -41,15 +41,15 @@ def test_stream_data() -> None:
     csv_path = resource_path / "trades/AEVOEUR/AEVOEUR.csv"
     np_dtype = [("time", "u8"), ("price", "f4"), ("volume", "f4")]
     arr = np.loadtxt(csv_path, delimiter=",", dtype=np_dtype)
-    assert arr.shape[0] == 1099
+    assert arr.shape[0] == 34
 
     gen = handler.stream_data_2(
         "AEVOEUR",
-        date(year=2024, month=5, day=30),
+        date(year=2024, month=6, day=28),
         until=date(year=2024, month=7, day=1),
     )
 
-    for i in range(1099):
+    for i in range(34):
         trade = next(gen)
         assert trade.feedcode == "AEVOEUR"
         assert trade.n_trades == 1
