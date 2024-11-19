@@ -1,0 +1,73 @@
+import numpy as np
+import os
+from datetime import date
+
+from pysrc.test.helpers import get_resources_path
+from pysrc.data_handlers.kraken.historical.raw_trades_handler import RawTradesHandler
+from pysrc.adapters.messages import TradeMessage
+from pysrc.util.types import Market, OrderSide
+
+resource_path = get_resources_path(__file__)
+
+
+def test_read_write_to_file() -> None:
+    handler = RawTradesHandler(resource_path / "trades")
+
+    trades = [
+        TradeMessage(
+            1, "BONKUSD", 1, 10.0, 1.0, OrderSide.BID, Market.KRAKEN_SPOT
+        ),
+        TradeMessage(
+            2, "BONKUSD", 1, 10.02, 0.5, OrderSide.BID, Market.KRAKEN_SPOT
+        ),
+        TradeMessage(
+            10, "BONKUSD", 1, 9.99, 1.5, OrderSide.BID, Market.KRAKEN_SPOT
+        )
+    ]
+
+    test_file_path = resource_path / "trades" / "BONKUSD" / "test.bin"
+    handler.write_to_file(test_file_path, trades)
+    restored_trades = handler.read_file(test_file_path)
+
+    assert len(trades) == len(restored_trades)
+    for i in range(len(trades)):
+        assert trades[i].feedcode == restored_trades[i].feedcode
+        assert trades[i].market == restored_trades[i].market
+        assert trades[i].n_trades == restored_trades[i].n_trades
+        assert trades[i].price == restored_trades[i].price
+        assert trades[i].quantity == restored_trades[i].quantity
+        assert trades[i].side == restored_trades[i].side
+        assert trades[i].time == restored_trades[i].time
+
+    os.remove(test_file_path)
+
+
+def test_stream_data() -> None:
+    handler = RawTradesHandler(resource_path / "trades")
+
+    # client = HistoricalTradesDataClient()
+    # chuncked_files = client._chunk_csv_by_day(str(resource_path / "trades" / "AEVOEUR" / "AEVOEUR.csv"))
+    # for chunked_file in chuncked_files:
+    #     handler._serialize_csv(Path(chunked_file))
+    #     os.remove(chunked_file)
+
+    csv_path = resource_path / "trades/AEVOEUR/AEVOEUR.csv"
+    np_dtype = [("time", "u8"), ("price", "f4"), ("volume", "f4")]
+    arr = np.loadtxt(csv_path, delimiter=",", dtype=np_dtype)
+    assert arr.shape[0] == 1099
+    
+    gen = handler.stream_data_2(
+        "AEVOEUR",
+        date(year=2024, month=5, day=30),
+        until=date(year=2024, month=7, day=1),
+    )
+
+    for i in range(1099):
+        trade = next(gen)
+        assert trade.feedcode == "AEVOEUR"
+        assert trade.n_trades == 1
+        assert trade.market == Market.KRAKEN_SPOT
+        assert trade.time == arr[i][0]
+        assert trade.price == arr[i][1]
+        assert trade.quantity == arr[i][2]
+        assert trade.side == OrderSide.BID
