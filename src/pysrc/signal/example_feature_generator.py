@@ -3,6 +3,7 @@ from pysrc.util.types import Asset
 from pysrc.signal.base_feature_generator import BaseFeatureGenerator
 from typing import override
 
+
 class ExampleFeatureGenerator(BaseFeatureGenerator):
     order_features = ["open", "high", "low", "close"]
     assets = [Asset.BTC, Asset.ETH, Asset.ADA, Asset.SOL, Asset.DOGE]
