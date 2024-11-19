@@ -54,8 +54,6 @@ def test_read_write_to_file() -> None:
         assert snapshots[i].bids == restored_snapshots[i].bids
         assert snapshots[i].asks == restored_snapshots[i].asks
 
-    os.remove(test_file_path)
-
 
 def test_stream_data() -> None:
     handler = SnapshotsDataHandler(resource_path / "snapshots")
@@ -108,6 +106,3 @@ def test_stream_data() -> None:
 
     with pytest.raises(StopIteration):
         next(gen)
-
-    for file_path in test_file_paths:
-        os.remove(file_path)
