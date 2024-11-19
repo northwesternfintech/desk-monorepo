@@ -35,9 +35,20 @@ SERVER_USERNAME_TO_SLACK_NAME: dict[str, str] = {
     "rewong": "Ryan Wong",
     "rmohan": "Romir Mohan",
     "steev": "Steve Ewald",
-    "wbrittian": "Will Brittian",
+    "fzhang": "Frank Zhang",
+    "rmohan": "Romir Mohan",
+    "myang": "Kevin Y",
+    "nwangjs": "Nathan Wang",
+    "hguan": "Harry Guan",
+    "chengian": "Ian Cheng",
     "wu": "Nathan Wu",
+    "maxbreslin": "Max Breslin",
+    "nolenca": "Clayton Nolen",
+    "ahuang9999": "Alex Huang",
     "xyliu": "Yang Liu",
+    "mossbarger": "Luke Mossbarger",
+    "jasonzhxn": "Jason Zhan",
+    "wbrittian": "Will Brittian",
 }
 
 
