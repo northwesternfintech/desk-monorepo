@@ -34,9 +34,10 @@ class Evaluator:
         generator = update_client.stream_updates(self.asset, start, end)
         return zip(res, generator)
 
-    def calculate_features(self) -> dict[str, list[float]]:
+    def calculate_features(
+        self, generator_client: BaseFeatureGenerator
+    ) -> dict[str, list[float]]:
         data = self._get_data_daterange(self.start, self.end)
-        generator_client = BaseFeatureGenerator()
         feature_dict: dict[str, list[float]] = dict.fromkeys(self.features, [])
         for trade, snapshot in data:
             features = generator_client.on_tick(
@@ -48,8 +49,9 @@ class Evaluator:
         return feature_dict
 
     # Suppose that returns is passed to evaluate_features
-    def evaluate_features(self, target: list[float]) -> np.ndarray:
-        calc_features = self.calculate_features()
+    def evaluate_features(
+        self, calc_features: dict[str, list[float]], target: list[float]
+    ) -> np.ndarray:
         input_matrix = []
         for feature in self.features:
             input_matrix.append(calc_features[feature])

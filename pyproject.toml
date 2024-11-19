@@ -19,6 +19,7 @@ types-requests = "^2.28.0"
 scikit-learn = "^1.5.2"
 numpy = "^2.1.2"
 pyzstd = "^0.16.2"
+types-python-dateutil = "^2.9.0.20241003"
 
 [build-system]
 requires = ["poetry-core"]
