@@ -34,8 +34,6 @@ def test_read_write_to_file() -> None:
         assert trades[i].side == restored_trades[i].side
         assert trades[i].time == restored_trades[i].time
 
-    os.remove(test_file_path)
-
 
 def test_stream_data() -> None:
     handler = TradesDataHandler(resource_path / "trades")
