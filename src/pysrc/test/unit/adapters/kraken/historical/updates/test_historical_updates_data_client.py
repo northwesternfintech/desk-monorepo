@@ -11,9 +11,14 @@ import pytest
 from pyzstd import CParameter, compress
 
 from pysrc.adapters.kraken.historical.updates.containers import (
-    ChunkedEventQueue, EventType, MBPBook, UpdateDelta)
-from pysrc.adapters.kraken.historical.updates.historical_updates_data_client import \
-    HistoricalUpdatesDataClient
+    ChunkedEventQueue,
+    EventType,
+    MBPBook,
+    UpdateDelta,
+)
+from pysrc.adapters.kraken.historical.updates.historical_updates_data_client import (
+    HistoricalUpdatesDataClient,
+)
 from pysrc.adapters.messages import SnapshotMessage
 from pysrc.test.helpers import get_resources_path
 from pysrc.util.types import Market, OrderSide
@@ -58,7 +63,8 @@ def test_mbp_book() -> None:
 
     assert book_copy._book != book._book
 
-def random_fill_queue(queue: ChunkedEventQueue):
+
+def random_fill_queue(queue: ChunkedEventQueue) -> None:
     assert queue._num_chunks == 5
 
     r = list(range(5))
@@ -68,7 +74,6 @@ def random_fill_queue(queue: ChunkedEventQueue):
         event_type = EventType(choice % 2)
         other_event_type = EventType(1 - (choice % 2))
 
-        
         for j in range(3):
             delta = UpdateDelta(OrderSide.BID, i * 4 + j, 1, i * 4 + j, i * 4 + j)
             queue.put([delta], event_type, i)
@@ -84,6 +89,7 @@ def random_fill_queue(queue: ChunkedEventQueue):
         queue.mark_done(other_event_type, i)
         time.sleep(0.05)
 
+
 def test_chunked_event_queue() -> None:
     queue = ChunkedEventQueue(num_chunks=5)
 
@@ -95,6 +101,7 @@ def test_chunked_event_queue() -> None:
         assert not queue.empty()
 
         delta = queue.peek()
+        assert delta is not None
         assert delta.side == OrderSide.BID
         assert delta.timestamp == i
         assert delta.sign == 1
@@ -102,6 +109,7 @@ def test_chunked_event_queue() -> None:
         assert delta.quantity == i
 
         delta = queue.get()
+        assert delta is not None
         assert delta.side == OrderSide.BID
         assert delta.timestamp == i
         assert delta.sign == 1
@@ -314,7 +322,13 @@ def test_queue_events_for_day(
     order_return_val["continuationToken"] = None
     mock_make_request.return_value = order_return_val
 
-    client._queue_events_for_chunk("", datetime(year=2024, month=11, day=5), datetime(year=2024, month=11, day=5), 0, EventType.ORDER)
+    client._queue_events_for_chunk(
+        "",
+        datetime(year=2024, month=11, day=5),
+        datetime(year=2024, month=11, day=5),
+        0,
+        EventType.ORDER,
+    )
 
     assert client._queue._statuses[EventType.ORDER][0]
     assert len(client._queue._chunks[0]) == 4
@@ -322,7 +336,13 @@ def test_queue_events_for_day(
 
     client._queue._cond_var = MagicMock()
     mock_make_request.return_value = EXECUTION_EVENTS
-    client._queue_events_for_chunk("", datetime(year=2024, month=11, day=5), datetime(year=2024, month=11, day=5), 0, EventType.EXECUTION)
+    client._queue_events_for_chunk(
+        "",
+        datetime(year=2024, month=11, day=5),
+        datetime(year=2024, month=11, day=5),
+        0,
+        EventType.EXECUTION,
+    )
     assert client._queue._statuses[EventType.EXECUTION][0]
     assert len(client._queue._chunks[0]) == 6
     client._queue._cond_var.notify.assert_called()
@@ -402,11 +422,13 @@ def test_fail_download_updates(
 
     with pytest.raises(ValueError) as e_info:
         client.download_updates(
-            asset="BONKUSD",
-            since=datetime(year=2024, month=11, day=5)
+            asset="BONKUSD", since=datetime(year=2024, month=11, day=5)
         )
 
-    assert e_info.value.args[0] == "Failed to download updates for 'BONKUSD' for date '11_05_2024'"
+    assert (
+        e_info.value.args[0]
+        == "Failed to download updates for 'BONKUSD' for date '11_05_2024'"
+    )
 
     shutil.rmtree(resource_path)
 

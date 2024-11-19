@@ -1,9 +1,8 @@
 from io import BufferedIOBase
 import os
 import struct
-from collections import deque
 from datetime import datetime, timedelta
-from threading import Condition, Thread
+from threading import Thread
 from typing import Any, Generator, Optional
 
 import numpy as np
@@ -31,15 +30,15 @@ class HistoricalUpdatesDataClient:
         self._resource_path = resource_path
         self._session = requests.Session()
 
-        self._NUM_CHUNKS = 24
+        self._NUM_CHUNKS = 48
         self._queue = ChunkedEventQueue(num_chunks=self._NUM_CHUNKS)
-        self._last_saved_mbp_book = None
-        self._cur_mbp_book = None
+        self._last_saved_mbp_book: Optional[MBPBook] = None
+        self._cur_mbp_book: Optional[MBPBook] = None
         self._last_saved_sec = -1
         self._cur_sec = -1
 
         self._zstd_options = {CParameter.compressionLevel: 10}
-        self._decompress_buffer = b''
+        self._decompress_buffer = b""
 
     def _request(self, route: str, params: dict[str, Any]) -> Any:
         res = self._session.get(route, params=params)
@@ -201,11 +200,12 @@ class HistoricalUpdatesDataClient:
             self._queue.mark_failed()
 
     def _compute_next_snapshot(self) -> Optional[SnapshotMessage]:
+        assert self._cur_mbp_book
+
         is_last_iter = not self._queue.empty()
 
         while True:
             next_delta = self._queue.peek()
-
             if next_delta is None:
                 break
 
@@ -213,8 +213,11 @@ class HistoricalUpdatesDataClient:
                 prev_sec = self._cur_sec
                 self._cur_sec = next_delta.timestamp
                 return self._cur_mbp_book.to_snapshot_message(prev_sec)
-            
+
             delta = self._queue.get()
+            if delta is None:
+                break
+
             self._cur_sec = delta.timestamp
             self._cur_mbp_book.apply_delta(delta)
 
@@ -239,22 +242,22 @@ class HistoricalUpdatesDataClient:
                 target=self._queue_events_for_chunk,
                 args=(
                     asset,
-                    day + timedelta(hours=i),
-                    day + timedelta(hours=i + 1),
+                    day + timedelta(minutes=30 * i),
+                    day + timedelta(minutes=30 * (i + 1)),
                     i,
-                    EventType.ORDER
-                )
+                    EventType.ORDER,
+                ),
             )
 
             exec_thread = Thread(
                 target=self._queue_events_for_chunk,
                 args=(
                     asset,
-                    day + timedelta(hours=i),
-                    day + timedelta(hours=i + 1),
+                    day + timedelta(minutes=30 * i),
+                    day + timedelta(minutes=30 * (i + 1)),
                     i,
-                    EventType.EXECUTION
-                )
+                    EventType.EXECUTION,
+                ),
             )
 
             threads.append(order_thread)
@@ -277,8 +280,15 @@ class HistoricalUpdatesDataClient:
         return file_path
 
     def download_updates(
-        self, asset: str, since: datetime, until: Optional[datetime] = None, max_retry_count: Optional[int] = 3
+        self,
+        asset: str,
+        since: datetime,
+        until: Optional[datetime] = None,
+        max_retry_count: Optional[int] = 3,
     ) -> None:
+        if max_retry_count is None:
+            max_retry_count = 3
+
         asset_path = os.path.join(self._resource_path, asset)
         if not os.path.exists(asset_path):
             os.mkdir(asset_path)
@@ -286,7 +296,9 @@ class HistoricalUpdatesDataClient:
         if not until:
             until = datetime.today()
 
-        self._last_saved_mbp_book = MBPBook(feedcode=asset, market=Market.KRAKEN_USD_FUTURE)
+        self._last_saved_mbp_book = MBPBook(
+            feedcode=asset, market=Market.KRAKEN_USD_FUTURE
+        )
         self._last_saved_sec = int(since.timestamp())
 
         self._cur_mbp_book = MBPBook(feedcode=asset, market=Market.KRAKEN_USD_FUTURE)
@@ -315,7 +327,9 @@ class HistoricalUpdatesDataClient:
 
             if not succeeded:
                 failed_day_str = cur.strftime("%m_%d_%Y")
-                raise ValueError(f"Failed to download updates for '{asset}' for date '{failed_day_str}'")
+                raise ValueError(
+                    f"Failed to download updates for '{asset}' for date '{failed_day_str}'"
+                )
 
     def _decompress_bytes(
         self, decompressor: EndlessZstdDecompressor, f: BufferedIOBase, output_size: int
@@ -329,7 +343,9 @@ class HistoricalUpdatesDataClient:
             else:
                 f_data = b""
 
-            self._decompress_buffer += decompressor.decompress(f_data, max_length=output_size)
+            self._decompress_buffer += decompressor.decompress(
+                f_data, max_length=output_size
+            )
 
         out = self._decompress_buffer[:output_size]
         self._decompress_buffer = self._decompress_buffer[output_size:]
