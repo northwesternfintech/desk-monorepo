@@ -7,13 +7,13 @@ from datetime import timedelta, date
 from pyzstd import compress, decompress, CParameter, ZstdFile, EndlessZstdDecompressor
 from typing import Optional, Generator
 
-from pysrc.data_handlers.kraken.historical.base_handler import BaseHandler
+from pysrc.data_handlers.kraken.historical.base_data_handler import BaseDataHandler
 from pysrc.adapters.kraken.historical.trades.historical_trades_data_client import HistoricalTradesDataClient
 from pysrc.adapters.messages import TradeMessage
 from pysrc.util.types import Market, OrderSide
 
 
-class RawTradesHandler(BaseHandler):
+class TradesDataHandler(BaseDataHandler):
     
     def __init__(self, resource_path: Path) -> None:
         self.resource_path = resource_path
@@ -179,7 +179,7 @@ def run_tests(asset: str) -> None:
 
     # Serialize csv to get compressed data
     resource_path = Path(__file__).parent / "resources" / "trades"
-    handler = RawTradesHandler(resource_path)
+    handler = TradesDataHandler(resource_path)
     handler._serialize_csv(resource_path / asset / f"{asset}.csv")
 
     # Test read_file()
@@ -237,7 +237,7 @@ def run_tests(asset: str) -> None:
 
 def run_stream_test(asset: str, function: int) -> None:
     resource_path = Path(__file__).parent / "resources" / "trades"
-    handler = RawTradesHandler(resource_path)
+    handler = TradesDataHandler(resource_path)
 
     if function == 1:
         gen = handler.stream_data(
