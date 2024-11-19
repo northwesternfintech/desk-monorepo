@@ -47,6 +47,17 @@ def test_mbp_book() -> None:
     assert snapshot.asks == [(15, 10)]
     assert snapshot.bids == [(12, 10)]
 
+    book_copy = book.copy()
+
+    assert book_copy != book
+    assert book_copy._feedcode == book._feedcode
+    assert book_copy._market == book._market
+    assert book_copy._book == book._book
+
+    book_copy._book[0][-1] = -1
+
+    assert book_copy._book != book._book
+
 def random_fill_queue(queue: ChunkedEventQueue):
     assert queue._num_chunks == 5
 
@@ -97,14 +108,19 @@ def test_chunked_event_queue() -> None:
         assert delta.price == i
         assert delta.quantity == i
 
-    # assert queue.empty()
-    # assert queue.peek() is None
-    # assert queue.pop() is None
+    assert queue.empty()
+    assert queue.peek() is None
+    assert queue.get() is None
 
     thread.join()
 
-if __name__ == "__main__":
-    test_chunked_event_queue()
+    queue = ChunkedEventQueue(num_chunks=5)
+    assert not queue.failed()
+    queue.mark_failed()
+    assert queue.failed()
+
+    assert queue.peek() is None
+
 
 @pytest.fixture
 def client() -> HistoricalUpdatesDataClient:
@@ -300,20 +316,20 @@ def test_queue_events_for_day(
 
     client._queue_events_for_chunk("", datetime(year=2024, month=11, day=5), datetime(year=2024, month=11, day=5), 0, EventType.ORDER)
 
-    assert client._queue._done_flags[EventType.ORDER][0]
+    assert client._queue._statuses[EventType.ORDER][0]
     assert len(client._queue._queues[EventType.ORDER][0]) == 4
     client._queue._cond_vars[EventType.ORDER][0].notify.assert_called()
 
     client._queue._cond_vars[EventType.EXECUTION][0] = MagicMock()
     mock_make_request.return_value = EXECUTION_EVENTS
     client._queue_events_for_chunk("", datetime(year=2024, month=11, day=5), datetime(year=2024, month=11, day=5), 0, EventType.EXECUTION)
-    assert client._queue._done_flags[EventType.EXECUTION][0]
+    assert client._queue._statuses[EventType.EXECUTION][0]
     assert len(client._queue._queues[EventType.EXECUTION][0]) == 2
     client._queue._cond_vars[EventType.EXECUTION][0].notify.assert_called()
 
 
 def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
-    client._mbp_book = MBPBook(feedcode="BONKUSD", market=Market.KRAKEN_USD_FUTURE)
+    client._cur_mbp_book = MBPBook(feedcode="BONKUSD", market=Market.KRAKEN_USD_FUTURE)
     client._queue = ChunkedEventQueue(num_chunks=1)
     client._cur_sec = 1
 
@@ -369,6 +385,26 @@ def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
 
     snapshot = client._compute_next_snapshot()
     assert snapshot is None
+
+
+@patch.object(HistoricalUpdatesDataClient, "_request")
+def test_fail_download_updates(
+    mock_make_request: MagicMock, client: HistoricalUpdatesDataClient
+) -> None:
+    test_dir = os.path.join(resource_path, "BONKUSD")
+    os.makedirs(test_dir, exist_ok=True)
+
+    mock_make_request.side_effect = ValueError()
+
+    with pytest.raises(ValueError) as e_info:
+        client.download_updates(
+            asset="BONKUSD",
+            since=datetime(year=2024, month=11, day=5)
+        )
+
+    assert e_info.value.args[0] == "Failed to download updates for 'BONKUSD' for date '11_05_2024'"
+
+    shutil.rmtree(resource_path)
 
 
 def test_stream_snapshot(client: HistoricalUpdatesDataClient) -> None:

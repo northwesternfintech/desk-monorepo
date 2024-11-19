@@ -78,6 +78,22 @@ class MBPBook:
             asks=asks,
             market=self._market,
         )
+    
+    def copy(self) -> 'MBPBook':
+        new_book = MBPBook(
+            feedcode=self._feedcode,
+            market=self._market
+        )
+
+        for i, side_orders in enumerate(self._book):
+            for price, quantity in side_orders.items():
+                new_book._book[i][price] = quantity
+
+        return new_book
+    
+class QueueStatus(Enum):
+    IN_PROGRESS = 0
+    DONE = 1
 
 class ChunkedEventQueue:
     def __init__(self, num_chunks: int = 24):
@@ -86,9 +102,9 @@ class ChunkedEventQueue:
         if self._num_chunks <= 0:
             raise ValueError("num_chunks must be greater than zero")
 
-        self._done_flags = {
-            EventType.ORDER: [False for _ in range(self._num_chunks)],
-            EventType.EXECUTION: [False for _ in range(self._num_chunks)],
+        self._statuses = {
+            EventType.ORDER: [QueueStatus.IN_PROGRESS for _ in range(self._num_chunks)],
+            EventType.EXECUTION: [QueueStatus.IN_PROGRESS for _ in range(self._num_chunks)],
         }
 
         self._queues = {
@@ -102,28 +118,40 @@ class ChunkedEventQueue:
         }
 
         self._cur_chunk = 0
+        self._failed = False
 
     def empty(self) -> bool:
         return self._cur_chunk >= self._num_chunks
     
+    def failed(self) -> bool:
+        return self._failed
+    
     def mark_done(self, event_type: EventType, chunk_idx: int) -> None:
-        if self._done_flags[event_type][chunk_idx]:
-            raise ValueError(f"chunk_idx '{chunk_idx}' already marked as done")
+        if self._statuses[event_type][chunk_idx] != QueueStatus.IN_PROGRESS:
+            raise ValueError(f"chunk_idx '{chunk_idx}' already marked")
         
         d = self._queues[event_type][chunk_idx]
         self._queues[event_type][chunk_idx] = deque(sorted(d, key=lambda x: x.timestamp))
         
-        self._done_flags[event_type][chunk_idx] = True
+        self._statuses[event_type][chunk_idx] = QueueStatus.DONE
         cond_var = self._cond_vars[event_type][chunk_idx]
         with cond_var:
             cond_var.notify()
+
+    def mark_failed(self) -> None:
+        self._failed = True
+
+        for event_cond_vars in self._cond_vars.values():
+            for cond_var in event_cond_vars:
+                with cond_var:
+                    cond_var.notify()
     
     def put(self, deltas: list[UpdateDelta], event_type: EventType, chunk_idx: int) -> None:
         if chunk_idx >= self._num_chunks:
             raise ValueError(f"chunk_idx '{chunk_idx}' out of bounds")
         
-        if self._done_flags[event_type][chunk_idx]:
-            raise ValueError(f"Attempted to put item into queue marked as done")
+        if self._statuses[event_type][chunk_idx] != QueueStatus.IN_PROGRESS:
+            raise ValueError(f"Attempted to put item into a marked queue")
         
         self._queues[event_type][chunk_idx].extend(deltas)
 
@@ -139,10 +167,13 @@ class ChunkedEventQueue:
         exec_cond_var = self._cond_vars[EventType.EXECUTION][self._cur_chunk]
         
         with order_cond_var:
-            order_cond_var.wait_for(lambda: self._done_flags[EventType.ORDER][self._cur_chunk])
+            order_cond_var.wait_for(lambda: self._failed or self._statuses[EventType.ORDER][self._cur_chunk] != QueueStatus.IN_PROGRESS)
 
         with exec_cond_var:
-            exec_cond_var.wait_for(lambda: self._done_flags[EventType.EXECUTION][self._cur_chunk])
+            exec_cond_var.wait_for(lambda: self._failed or self._statuses[EventType.EXECUTION][self._cur_chunk] != QueueStatus.IN_PROGRESS)
+
+        if self._failed:
+            return None
         
         order_delta_queue = self._queues[EventType.ORDER][self._cur_chunk]
         exec_delta_queue = self._queues[EventType.EXECUTION][self._cur_chunk]
@@ -181,4 +212,12 @@ class ChunkedEventQueue:
         if next_event_type is None:
             return None
         
-        return self._queues[next_event_type][self._cur_chunk].popleft()
+        order_delta_queue = self._queues[EventType.ORDER][self._cur_chunk]
+        exec_delta_queue = self._queues[EventType.EXECUTION][self._cur_chunk]
+
+        res = self._queues[next_event_type][self._cur_chunk].popleft()
+
+        if not order_delta_queue and not exec_delta_queue:
+            self._cur_chunk += 1
+        
+        return res
