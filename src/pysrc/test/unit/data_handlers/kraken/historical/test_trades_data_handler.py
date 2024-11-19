@@ -1,9 +1,10 @@
+import pytest
 import numpy as np
 import os
 from datetime import date
 
 from pysrc.test.helpers import get_resources_path
-from pysrc.data_handlers.kraken.historical.raw_trades_handler import RawTradesHandler
+from pysrc.data_handlers.kraken.historical.trades_data_handler import TradesDataHandler
 from pysrc.adapters.messages import TradeMessage
 from pysrc.util.types import Market, OrderSide
 
@@ -11,7 +12,7 @@ resource_path = get_resources_path(__file__)
 
 
 def test_read_write_to_file() -> None:
-    handler = RawTradesHandler(resource_path / "trades")
+    handler = TradesDataHandler(resource_path / "trades")
 
     trades = [
         TradeMessage(
@@ -43,7 +44,7 @@ def test_read_write_to_file() -> None:
 
 
 def test_stream_data() -> None:
-    handler = RawTradesHandler(resource_path / "trades")
+    handler = TradesDataHandler(resource_path / "trades")
 
     # client = HistoricalTradesDataClient()
     # chuncked_files = client._chunk_csv_by_day(str(resource_path / "trades" / "AEVOEUR" / "AEVOEUR.csv"))
@@ -71,3 +72,6 @@ def test_stream_data() -> None:
         assert trade.price == arr[i][1]
         assert trade.quantity == arr[i][2]
         assert trade.side == OrderSide.BID
+
+    with pytest.raises(StopIteration):
+        next(gen)

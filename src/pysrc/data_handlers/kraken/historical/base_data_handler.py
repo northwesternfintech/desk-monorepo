@@ -5,7 +5,7 @@ from datetime import datetime
 from pysrc.adapters.messages import TradeMessage, SnapshotMessage
 
 
-class BaseHandler(ABC):
+class BaseDataHandler(ABC):
     @abstractmethod
     def __init__(self, resource_path: Path) -> None:
         raise NotImplementedError

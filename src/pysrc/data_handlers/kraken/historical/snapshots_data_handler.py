@@ -1,16 +1,16 @@
 import numpy as np
 import struct
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import date, timedelta
 from pyzstd import compress, decompress, CParameter, ZstdFile
 from typing import Optional, Generator
 
-from pysrc.data_handlers.kraken.historical.base_handler import BaseHandler
+from pysrc.data_handlers.kraken.historical.base_data_handler import BaseDataHandler
 from pysrc.adapters.messages import SnapshotMessage
 from pysrc.util.types import Market
 
 
-class RawUpdatesHandler(BaseHandler):
+class SnapshotsDataHandler(BaseDataHandler):
     
     def __init__(self, resource_path: Path) -> None:
         self.resource_path = resource_path
@@ -84,7 +84,7 @@ class RawUpdatesHandler(BaseHandler):
     
 
     def stream_data(
-        self, asset: str, since: datetime, until: Optional[datetime]
+        self, asset: str, since: date, until: Optional[date]
     ) -> Generator[SnapshotMessage, None, None]:
         
         asset_path = self.resource_path / asset
@@ -92,7 +92,7 @@ class RawUpdatesHandler(BaseHandler):
             raise ValueError(f"No directory for `{asset}` found in resource path")
 
         if not until:
-            until = datetime.today()
+            until = date.today()
 
         file_paths = []
         for i in range((until - since).days):
@@ -116,7 +116,7 @@ class RawUpdatesHandler(BaseHandler):
 def run_tests(asset: str) -> None:
 
     resource_path = Path(__file__).parent / "resources" / "snapshots"
-    handler = RawUpdatesHandler(resource_path)
+    handler = SnapshotsDataHandler(resource_path)
 
     snapshots = [
         SnapshotMessage(
@@ -156,8 +156,8 @@ def run_tests(asset: str) -> None:
 
     gen = handler.stream_data(
         "BONKUSD",
-        datetime(year=2024, month=11, day=11),
-        until=datetime(year=2024, month=11, day=16),
+        date(year=2024, month=11, day=11),
+        until=date(year=2024, month=11, day=16),
     )
 
     i = 0
