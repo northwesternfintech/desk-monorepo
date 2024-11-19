@@ -11,33 +11,28 @@ from pysrc.util.types import Market
 
 
 class SnapshotsDataHandler(BaseDataHandler):
-    
     def __init__(self, resource_path: Path) -> None:
         self.resource_path = resource_path
         self._zstd_options = {CParameter.compressionLevel: 10}
         self._metadata_size = 24
 
-
     def _compress(self, data: bytes, output_path: Path) -> None:
         with open(output_path, "wb") as f:
             f.write(compress(data, level_or_option=self._zstd_options))
-
 
     def _decompress(self, input_path: Path) -> bytes:
         with open(input_path, "rb") as f:
             return decompress(f.read())
 
-
     def read_file(self, input_path: Path) -> list[SnapshotMessage]:
         snapshots = []
-        with ZstdFile(input_path, 'rb') as f:
+        with ZstdFile(input_path, "rb") as f:
             while True:
                 snapshot = self._update_message_from_stream(f)
                 if not snapshot:
                     break
                 snapshots.append(snapshot)
         return snapshots
-    
 
     def write_to_file(self, output_path: Path, data: list[SnapshotMessage]) -> None:
         out = b""
@@ -45,11 +40,7 @@ class SnapshotsDataHandler(BaseDataHandler):
             out += snapshot.to_bytes()
         self._compress(out, output_path)
 
-
-    def _update_message_from_stream(
-        self, file: ZstdFile
-    ) -> Optional[SnapshotMessage]:
-        
+    def _update_message_from_stream(self, file: ZstdFile) -> Optional[SnapshotMessage]:
         packed_metadata = file.read(self._metadata_size)
         if not packed_metadata:
             return None
@@ -81,12 +72,10 @@ class SnapshotsDataHandler(BaseDataHandler):
             bids=bids.reshape((-1, 2)).tolist(),
             asks=asks.reshape((-1, 2)).tolist(),
         )
-    
 
     def stream_data(
         self, asset: str, since: date, until: Optional[date]
     ) -> Generator[SnapshotMessage, None, None]:
-        
         asset_path = self.resource_path / asset
         if not asset_path.exists():
             raise ValueError(f"No directory for `{asset}` found in resource path")
@@ -104,72 +93,9 @@ class SnapshotsDataHandler(BaseDataHandler):
             file_paths.append(cur_path)
 
         for cur_path in file_paths:
-            with ZstdFile(cur_path, 'rb') as f:
+            with ZstdFile(cur_path, "rb") as f:
                 while True:
                     snapshot = self._update_message_from_stream(f)
                     if not snapshot:
                         break
                     yield snapshot
-
-
-
-def run_tests(asset: str) -> None:
-
-    resource_path = Path(__file__).parent / "resources" / "snapshots"
-    handler = SnapshotsDataHandler(resource_path)
-
-    snapshots = [
-        SnapshotMessage(
-            time=1,
-            feedcode=asset,
-            market=Market.KRAKEN_USD_FUTURE,
-            bids=[],
-            asks=[[1.0, 2.0]],
-        ),
-        SnapshotMessage(
-            time=2,
-            feedcode=asset,
-            market=Market.KRAKEN_USD_FUTURE,
-            bids=[[3.0, 4.0], [5.0, -6.0], [68717.5, -3000.0]],
-            asks=[[1.0, 2.0], [68717.5, -3000.0]],
-        ),
-        SnapshotMessage(
-            time=10,
-            feedcode=asset,
-            market=Market.KRAKEN_USD_FUTURE,
-            bids=[[3.0, 4.0], [5.0, -6.0], [68717.5, -3000.0], [7.0, -8.0]],
-            asks=[[1.0, 2.0], [68717.5, -3000.0]],
-        ),
-    ]
-
-    handler.write_to_file(resource_path / asset / f"{asset}.bin", snapshots)
-    handler.write_to_file(resource_path / asset / "11_11_2024.bin", snapshots)
-    handler.write_to_file(resource_path / asset / "11_12_2024.bin", snapshots)
-    handler.write_to_file(resource_path / asset / "11_13_2024.bin", snapshots)
-    handler.write_to_file(resource_path / asset / "11_14_2024.bin", snapshots)
-    handler.write_to_file(resource_path / asset / "11_15_2024.bin", snapshots)
-
-    read_snapshots = handler.read_file(resource_path / asset / f"{asset}.bin")
-    for snapshot in read_snapshots:
-        print(snapshot.time, snapshot.bids, snapshot.asks)
-    print("")
-
-    gen = handler.stream_data(
-        "BONKUSD",
-        date(year=2024, month=11, day=11),
-        until=date(year=2024, month=11, day=16),
-    )
-
-    i = 0
-    while True:
-        try:
-            snapshot = next(gen)
-            i += 1
-            print(i, snapshot.time, snapshot.bids, snapshot.asks)
-        except StopIteration:
-            break
-
-
-
-if __name__ == "__main__":
-    run_tests("BONKUSD")
