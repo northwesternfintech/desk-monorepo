@@ -4,7 +4,7 @@ from pysrc.signal.base_feature_generator import BaseFeatureGenerator
 
 
 class ExampleFeatureGenerator(BaseFeatureGenerator):
-    orderFeatures = ["open", "high", "low", "close"]
+    order_features = ["open", "high", "low", "close"]
     assets = [Asset.BTC, Asset.ETH, Asset.ADA, Asset.SOL, Asset.DOGE]
 
     def __init__(self) -> None:

@@ -134,7 +134,7 @@ def test_on_tick() -> None:
     assert output[Asset.DOGE]["features"] == [0.0, 0.0, 0.0, 0.0]
 
     for asset in generator.assets:
-        assert len(output[asset]["features"]) == len(generator.orderFeatures)
+        assert len(output[asset]["features"]) == len(generator.order_features)
 
 
 def test_feature_order_consistency() -> None:
