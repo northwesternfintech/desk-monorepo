@@ -11,7 +11,7 @@ resource_path = get_resources_path(__file__)
 
 
 def test_read_write_to_file() -> None:
-    handler = TradesDataHandler(resource_path / "trades", 2)
+    handler = TradesDataHandler(2)
 
     trades = [
         TradeMessage(1, "XADAZUSD", 1, 10.0, 1.0, OrderSide.BID, Market.KRAKEN_SPOT),
@@ -37,7 +37,7 @@ def test_read_write_to_file() -> None:
 
 
 def test_stream_data() -> None:
-    handler = TradesDataHandler(resource_path / "trades", 2)
+    handler = TradesDataHandler(2)
 
     trades = []
     for i in range(10):

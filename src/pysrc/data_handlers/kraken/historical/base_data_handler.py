@@ -6,7 +6,7 @@ from pysrc.adapters.messages import TradeMessage, SnapshotMessage
 
 class BaseDataHandler(ABC):
     @abstractmethod
-    def __init__(self, resource_path: Path) -> None:
+    def __init__(self, write_size: int) -> None:
         raise NotImplementedError
 
     @abstractmethod

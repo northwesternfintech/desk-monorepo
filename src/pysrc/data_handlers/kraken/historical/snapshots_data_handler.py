@@ -10,13 +10,14 @@ from pysrc.util.types import Market
 
 
 class SnapshotsDataHandler(BaseDataHandler):
-    def __init__(self, resource_path: Path, write_size: int = 1000) -> None:
-        self.resource_path = resource_path
-        self.write_size = write_size
+    def __init__(self, write_size: int = 1000) -> None:
+        self._write_size = write_size
         self._metadata_size = 24
         self._zstd_options = {CParameter.compressionLevel: 10}
 
     def read(self, input_path: Path) -> list[SnapshotMessage]:
+        if not input_path.exists():
+            raise ValueError(f"Expected file '{input_path}' does not exist")
         snapshots = []
         with ZstdFile(input_path, "rb") as f:
             while True:
@@ -34,7 +35,7 @@ class SnapshotsDataHandler(BaseDataHandler):
             for snapshot in data:
                 out += snapshot.to_bytes()
                 count += 1
-                if count >= self.write_size:
+                if count >= self._write_size:
                     f.write(compressor.compress(out, ZstdCompressor.FLUSH_FRAME))
                     out = b""
                     count = 0

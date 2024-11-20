@@ -11,9 +11,8 @@ from pysrc.util.types import Market, OrderSide, Asset
 
 
 class TradesDataHandler(BaseDataHandler):
-    def __init__(self, resource_path: Path, write_size: int = 5000) -> None:
-        self.resource_path = resource_path
-        self.write_size = write_size
+    def __init__(self, write_size: int = 5000) -> None:
+        self._write_size = write_size
         self._np_dtype = [
             ("time", "u8"),
             ("price", "f4"),
@@ -50,7 +49,7 @@ class TradesDataHandler(BaseDataHandler):
             for trade in data:
                 out += trade.to_bytes()
                 count += 1
-                if count >= self.write_size:
+                if count >= self._write_size:
                     f.write(compressor.compress(out, ZstdCompressor.FLUSH_FRAME))
                     out = b""
                     count = 0
