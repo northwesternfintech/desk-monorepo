@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Optional, Generator
-from datetime import datetime
+from typing import Any, Generator
 from pysrc.adapters.messages import TradeMessage, SnapshotMessage
 
 
@@ -11,15 +10,15 @@ class BaseDataHandler(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def read_file(self, input_path: Path) -> list[TradeMessage] | list[SnapshotMessage]:
+    def read(self, input_path: Path) -> list[Any]:
         raise NotImplementedError
 
     @abstractmethod
-    def write_to_file(self, output_path: Path, data: Any) -> None:
+    def write(self, output_path: Path, data: list[Any]) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    def stream_data(
-        self, asset: str, since: datetime, until: Optional[datetime]
+    def stream_read(
+        self, input_path: Path
     ) -> Generator[TradeMessage | SnapshotMessage, None, None]:
         raise NotImplementedError

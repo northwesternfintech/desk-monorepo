@@ -1,8 +1,7 @@
 import numpy as np
 import struct
 from pathlib import Path
-from datetime import date, timedelta
-from pyzstd import compress, decompress, CParameter, ZstdFile
+from pyzstd import decompress, ZstdFile, CParameter, ZstdCompressor
 from typing import Optional, Generator
 
 from pysrc.data_handlers.kraken.historical.base_data_handler import BaseDataHandler
@@ -13,18 +12,19 @@ from pysrc.util.types import Market
 class SnapshotsDataHandler(BaseDataHandler):
     def __init__(self, resource_path: Path) -> None:
         self.resource_path = resource_path
-        self._zstd_options = {CParameter.compressionLevel: 10}
         self._metadata_size = 24
+        self._zstd_options = {CParameter.compressionLevel: 10}
 
     def _compress(self, data: bytes, output_path: Path) -> None:
+        compressor = ZstdCompressor(level_or_option=self._zstd_options)
         with open(output_path, "wb") as f:
-            f.write(compress(data, level_or_option=self._zstd_options))
+            f.write(compressor.compress(data, ZstdCompressor.FLUSH_FRAME))
 
     def _decompress(self, input_path: Path) -> bytes:
         with open(input_path, "rb") as f:
             return decompress(f.read())
 
-    def read_file(self, input_path: Path) -> list[SnapshotMessage]:
+    def read(self, input_path: Path) -> list[SnapshotMessage]:
         snapshots = []
         with ZstdFile(input_path, "rb") as f:
             while True:
@@ -34,7 +34,7 @@ class SnapshotsDataHandler(BaseDataHandler):
                 snapshots.append(snapshot)
         return snapshots
 
-    def write_to_file(self, output_path: Path, data: list[SnapshotMessage]) -> None:
+    def write(self, output_path: Path, data: list[SnapshotMessage]) -> None:
         out = b""
         for snapshot in data:
             out += snapshot.to_bytes()
@@ -73,29 +73,12 @@ class SnapshotsDataHandler(BaseDataHandler):
             asks=asks.reshape((-1, 2)).tolist(),
         )
 
-    def stream_data(
-        self, asset: str, since: date, until: Optional[date]
-    ) -> Generator[SnapshotMessage, None, None]:
-        asset_path = self.resource_path / asset
-        if not asset_path.exists():
-            raise ValueError(f"No directory for `{asset}` found in resource path")
-
-        if not until:
-            until = date.today()
-
-        file_paths = []
-        for i in range((until - since).days):
-            cur = since + timedelta(days=i)
-            cur_file_name = cur.strftime("%m_%d_%Y.bin")
-            cur_path = asset_path / cur_file_name
-            if not cur_path.exists():
-                raise ValueError(f"Expected file '{cur_path}' does not exist")
-            file_paths.append(cur_path)
-
-        for cur_path in file_paths:
-            with ZstdFile(cur_path, "rb") as f:
-                while True:
-                    snapshot = self._update_message_from_stream(f)
-                    if not snapshot:
-                        break
-                    yield snapshot
+    def stream_read(self, input_path: Path) -> Generator[SnapshotMessage, None, None]:
+        if not input_path.exists():
+            raise ValueError(f"Expected file '{input_path}' does not exist")
+        with ZstdFile(input_path, "rb") as f:
+            while True:
+                snapshot = self._update_message_from_stream(f)
+                if not snapshot:
+                    break
+                yield snapshot
