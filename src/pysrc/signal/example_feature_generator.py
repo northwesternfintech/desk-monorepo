@@ -33,5 +33,4 @@ class ExampleFeatureGenerator(BaseFeatureGenerator):
             asset_trades = trades.get(feedcode, [])
             features = self.compute_ohlc(asset_trades)
             output[asset] = {"features": features}
-        # ["open", "high", "low", "close"]
         return output
