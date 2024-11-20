@@ -13,7 +13,6 @@ class TargetLogReturn:
         self._buffer: deque[SnapshotMessage] = deque(maxlen=time_delay)
         self._client = KrakenClient()
 
-        # initialize the buffer to be time delayed
         for _ in range(time_delay):
             snapshot = self._client.get_order_book(asset)
             self._buffer.append(snapshot)
