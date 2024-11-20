@@ -6,7 +6,7 @@ from pysrc.data_handlers.kraken.historical.snapshots_data_handler import (
     SnapshotsDataHandler,
 )
 from pysrc.adapters.messages import SnapshotMessage
-from pysrc.util.types import Market
+from pysrc.util.types import Market, Asset
 
 random.seed(42)
 resource_path = get_resources_path(__file__)

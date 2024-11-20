@@ -4,7 +4,7 @@ import random
 from pysrc.test.helpers import get_resources_path
 from pysrc.data_handlers.kraken.historical.trades_data_handler import TradesDataHandler
 from pysrc.adapters.messages import TradeMessage
-from pysrc.util.types import Market, OrderSide
+from pysrc.util.types import Market, OrderSide, Asset
 
 random.seed(42)
 resource_path = get_resources_path(__file__)
