@@ -1,22 +1,19 @@
 import pytest
-import numpy as np
-import os
 import random
-from datetime import date
 
 from pysrc.test.helpers import get_resources_path
 from pysrc.data_handlers.kraken.historical.snapshots_data_handler import (
     SnapshotsDataHandler,
 )
 from pysrc.adapters.messages import SnapshotMessage
-from pysrc.util.types import Market, Asset
+from pysrc.util.types import Market
 
 random.seed(42)
 resource_path = get_resources_path(__file__)
 
 
 def test_read_write_to_file() -> None:
-    handler = SnapshotsDataHandler(resource_path / "trades")
+    handler = SnapshotsDataHandler(resource_path / "trades", 2)
 
     snapshots = [
         SnapshotMessage(
@@ -56,7 +53,7 @@ def test_read_write_to_file() -> None:
 
 
 def test_stream_data() -> None:
-    handler = SnapshotsDataHandler(resource_path / "snapshots")
+    handler = SnapshotsDataHandler(resource_path / "snapshots", 2)
 
     snapshots = []
     for i in range(10):

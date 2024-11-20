@@ -1,20 +1,17 @@
 import pytest
-import numpy as np
-import os
 import random
-from datetime import date
 
 from pysrc.test.helpers import get_resources_path
 from pysrc.data_handlers.kraken.historical.trades_data_handler import TradesDataHandler
 from pysrc.adapters.messages import TradeMessage
-from pysrc.util.types import Market, OrderSide, Asset
+from pysrc.util.types import Market, OrderSide
 
 random.seed(42)
 resource_path = get_resources_path(__file__)
 
 
 def test_read_write_to_file() -> None:
-    handler = TradesDataHandler(resource_path / "trades")
+    handler = TradesDataHandler(resource_path / "trades", 2)
 
     trades = [
         TradeMessage(1, "XADAZUSD", 1, 10.0, 1.0, OrderSide.BID, Market.KRAKEN_SPOT),
@@ -40,7 +37,7 @@ def test_read_write_to_file() -> None:
 
 
 def test_stream_data() -> None:
-    handler = TradesDataHandler(resource_path / "trades")
+    handler = TradesDataHandler(resource_path / "trades", 2)
 
     trades = []
     for i in range(10):

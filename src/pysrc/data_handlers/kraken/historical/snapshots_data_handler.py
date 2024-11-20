@@ -1,7 +1,7 @@
 import numpy as np
 import struct
 from pathlib import Path
-from pyzstd import decompress, ZstdFile, CParameter, ZstdCompressor
+from pyzstd import ZstdFile, CParameter, ZstdCompressor
 from typing import Optional, Generator
 
 from pysrc.data_handlers.kraken.historical.base_data_handler import BaseDataHandler
@@ -10,37 +10,39 @@ from pysrc.util.types import Market
 
 
 class SnapshotsDataHandler(BaseDataHandler):
-    def __init__(self, resource_path: Path) -> None:
+    def __init__(self, resource_path: Path, write_size: int = 1000) -> None:
         self.resource_path = resource_path
+        self.write_size = write_size
         self._metadata_size = 24
         self._zstd_options = {CParameter.compressionLevel: 10}
-
-    def _compress(self, data: bytes, output_path: Path) -> None:
-        compressor = ZstdCompressor(level_or_option=self._zstd_options)
-        with open(output_path, "wb") as f:
-            f.write(compressor.compress(data, ZstdCompressor.FLUSH_FRAME))
-
-    def _decompress(self, input_path: Path) -> bytes:
-        with open(input_path, "rb") as f:
-            return decompress(f.read())
 
     def read(self, input_path: Path) -> list[SnapshotMessage]:
         snapshots = []
         with ZstdFile(input_path, "rb") as f:
             while True:
-                snapshot = self._update_message_from_stream(f)
+                snapshot = self._snapshot_message_from_stream(f)
                 if not snapshot:
                     break
                 snapshots.append(snapshot)
         return snapshots
 
     def write(self, output_path: Path, data: list[SnapshotMessage]) -> None:
+        compressor = ZstdCompressor(level_or_option=self._zstd_options)
         out = b""
-        for snapshot in data:
-            out += snapshot.to_bytes()
-        self._compress(out, output_path)
+        count = 0
+        with open(output_path, "wb") as f:
+            for snapshot in data:
+                out += snapshot.to_bytes()
+                count += 1
+                if count >= self.write_size:
+                    f.write(compressor.compress(out, ZstdCompressor.FLUSH_FRAME))
+                    out = b""
+                    count = 0
+            f.write(compressor.compress(out, ZstdCompressor.FLUSH_FRAME))
 
-    def _update_message_from_stream(self, file: ZstdFile) -> Optional[SnapshotMessage]:
+    def _snapshot_message_from_stream(
+        self, file: ZstdFile
+    ) -> Optional[SnapshotMessage]:
         packed_metadata = file.read(self._metadata_size)
         if not packed_metadata:
             return None
@@ -78,7 +80,7 @@ class SnapshotsDataHandler(BaseDataHandler):
             raise ValueError(f"Expected file '{input_path}' does not exist")
         with ZstdFile(input_path, "rb") as f:
             while True:
-                snapshot = self._update_message_from_stream(f)
+                snapshot = self._snapshot_message_from_stream(f)
                 if not snapshot:
                     break
                 yield snapshot
