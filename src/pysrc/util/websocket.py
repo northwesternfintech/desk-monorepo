@@ -2,13 +2,14 @@ import asyncio
 import websockets
 import json
 from abc import ABC, abstractmethod
+from websockets.asyncio.client import ClientConnection
 from typing import Optional
 
 
 class WebSocketClient(ABC):
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url
-        self.ws: Optional[websockets.WebSocketClientProtocol] = None
+        self.ws: Optional[ClientConnection] = None
         self._listener_task: Optional[asyncio.Task] = None
 
     def start(self) -> None:
@@ -38,12 +39,14 @@ class WebSocketClient(ABC):
         try:
             while True:
                 print("Listening for messages from WebSocket...")
+                if self.ws is None:
+                    raise RuntimeError("WebSocket connection is not established.")
                 async for message in self.ws:
                     try:
                         data = json.loads(message)
                         await self.on_message(data)
                     except json.JSONDecodeError:
-                        print(f"Failed to parse message: {message}")
+                        print("Failed to parse message")
                     await asyncio.sleep(0.1)  # small delay for processing, can change
         except websockets.ConnectionClosed as e:
             print(f"WebSocket connection closed during listening: {e}")
