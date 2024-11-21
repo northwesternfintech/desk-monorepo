@@ -1,6 +1,6 @@
-from pysrc.util.exceptions import DIE, prod_assert
-
 import pytest
+
+from pysrc.util.exceptions import DIE, prod_assert
 
 
 def test_die_with_message() -> None:

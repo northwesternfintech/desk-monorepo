@@ -1,6 +1,6 @@
+import pickle
 from pathlib import Path
 from typing import Any
-import pickle
 
 
 def store_pickle(data: Any, path: Path) -> None:

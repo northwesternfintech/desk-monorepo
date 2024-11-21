@@ -1,19 +1,20 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
-from pysrc.adapters.kraken.spot.kraken_client import KrakenClient
-from pysrc.util.types import Asset
+
 from pysrc.adapters.kraken.spot.containers import (
-    SystemStatus,
     AssetInfo,
     AssetPairInfo,
+    AssetStatus,
     OHLCData,
     OHLCTick,
     SpreadMessage,
-    AssetStatus,
+    SystemStatus,
 )
+from pysrc.adapters.kraken.spot.kraken_client import KrakenClient
 from pysrc.adapters.messages import SnapshotMessage, TradeMessage
-from pysrc.util.types import Market, OrderSide
 from pysrc.util.enum_conversions import string_to_enum
+from pysrc.util.types import Asset, Market, OrderSide
 
 
 @pytest.fixture

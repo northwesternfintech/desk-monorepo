@@ -1,19 +1,21 @@
+from typing import Any, Dict, Mapping, Optional
+
 import requests
-from pysrc.util.enum_conversions import enum_to_string, string_to_enum
+
 from pysrc.adapters.kraken.asset_mappings import asset_to_kraken, kraken_to_asset
 from pysrc.adapters.kraken.spot.containers import (
-    SystemStatus,
     AssetInfo,
     AssetPairInfo,
-    OHLCData,
     AssetStatus,
+    OHLCData,
     OHLCTick,
     SpreadMessage,
+    SystemStatus,
     TradeableAssetPairParam,
 )
-from typing import Optional, Dict, Mapping, Any
+from pysrc.adapters.messages import SnapshotMessage, TradeMessage
+from pysrc.util.enum_conversions import enum_to_string, string_to_enum
 from pysrc.util.types import Asset, Market, OrderSide
-from pysrc.adapters.messages import TradeMessage, SnapshotMessage
 
 KRAKEN_API_LIVE_BASE_URL = "https://api.kraken.com/0/public/"
 

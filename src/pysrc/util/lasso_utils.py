@@ -1,6 +1,7 @@
-from pysrc.util.types import Asset
-from pysrc.util.enum_conversions import enum_to_string
 from pathlib import Path
+
+from pysrc.util.enum_conversions import enum_to_string
+from pysrc.util.types import Asset
 
 
 def asset_to_model_filename(asset: Asset) -> str:

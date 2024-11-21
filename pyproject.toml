@@ -26,6 +26,17 @@ websockets = "^14.0"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.ruff.lint]
+select = [
+    # isort
+    "I",
+    # pyflakes
+    "F",
+    # pycodestyle
+    "E",
+    "UP"
+]
+ignore = ["E501", "E402", "E741"]
 
 [tool.ruff.lint.per-file-ignores]
 "test_*.py" = ["F401"]

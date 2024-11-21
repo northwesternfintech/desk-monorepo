@@ -1,6 +1,7 @@
+import io
+
 from pysrc.adapters.messages import SnapshotMessage
 from pysrc.util.types import Market
-import io
 
 
 def test_snapshot_message_ctor() -> None:

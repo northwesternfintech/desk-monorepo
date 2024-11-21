@@ -1,7 +1,9 @@
 from enum import Enum
-import pytest
-from pysrc.util.enum_conversions import enum_to_string, string_to_enum
 from typing import TypeVar
+
+import pytest
+
+from pysrc.util.enum_conversions import enum_to_string, string_to_enum
 
 
 class ExampleEnum(Enum):

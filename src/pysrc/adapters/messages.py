@@ -1,6 +1,8 @@
-from pysrc.util.types import Market, OrderSide
-import numpy as np
 import struct
+
+import numpy as np
+
+from pysrc.util.types import Market, OrderSide
 
 
 class SnapshotMessage:

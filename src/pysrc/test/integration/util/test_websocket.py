@@ -1,8 +1,10 @@
-import pytest
 import asyncio
 import json
-from websockets.asyncio.server import serve, Server, ServerConnection
 from typing import AsyncGenerator
+
+import pytest
+from websockets.asyncio.server import Server, ServerConnection, serve
+
 from pysrc.util.websocket import WebSocketClient
 
 

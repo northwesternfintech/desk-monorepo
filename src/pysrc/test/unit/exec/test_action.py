@@ -1,8 +1,8 @@
+import pytest
+
 from pysrc.exec.action import Action
 from pysrc.test.helpers import get_test_instrument
-from pysrc.util.types import OrderSide, LiquidityType
-
-import pytest
+from pysrc.util.types import LiquidityType, OrderSide
 
 
 def test_action_ctor_taker() -> None:
