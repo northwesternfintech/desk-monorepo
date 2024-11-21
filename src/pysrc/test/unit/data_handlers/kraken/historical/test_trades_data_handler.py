@@ -19,7 +19,7 @@ def test_read_write_to_file() -> None:
         TradeMessage(10, "XADAZUSD", 1, 9.99, 1.5, OrderSide.BID, Market.KRAKEN_SPOT),
     ]
 
-    test_file_path = resource_path / "trades" / "XADAZUSD" / "test.bin"
+    test_file_path = resource_path / "trades" / "XADAZUSD" / "bulk_rw_test.bin"
     handler.write(test_file_path, trades)
     restored_trades = handler.read(test_file_path)
 
@@ -53,7 +53,7 @@ def test_stream_data() -> None:
             )
         )
 
-    test_file_path = resource_path / "trades" / "XADAZUSD" / "test2.bin"
+    test_file_path = resource_path / "trades" / "XADAZUSD" / "stream_read.bin"
     handler.write(test_file_path, trades)
 
     gen = handler.stream_read(test_file_path)

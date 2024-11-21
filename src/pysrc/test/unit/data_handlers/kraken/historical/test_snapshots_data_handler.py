@@ -39,7 +39,7 @@ def test_read_write_to_file() -> None:
         ),
     ]
 
-    test_file_path = resource_path / "snapshots" / "XADAZUSD" / "test.bin"
+    test_file_path = resource_path / "snapshots" / "XADAZUSD" / "bulk_rw_test.bin"
     handler.write(test_file_path, snapshots)
     restored_snapshots = handler.read(test_file_path)
 
@@ -73,7 +73,7 @@ def test_stream_data() -> None:
             )
         )
 
-    test_file_path = resource_path / "snapshots" / "XADAZUSD" / "test2.bin"
+    test_file_path = resource_path / "snapshots" / "XADAZUSD" / "stream_read.bin"
     handler.write(test_file_path, snapshots)
     gen = handler.stream_read(test_file_path)
 

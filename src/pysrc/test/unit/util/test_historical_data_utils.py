@@ -26,25 +26,20 @@ def test_valid_historical_data_filepath() -> None:
 
 
 def test_invalid_historical_data_filepath() -> None:
-    invalid_path_not_file = Path(__file__).parent / "trades" / "XXBTZUSD"
+    resource_path = Path(__file__).parent
+    invalid_path_not_file = resource_path / "trades" / "XXBTZUSD"
     assert not check_historical_data_filepath(invalid_path_not_file, True)
 
-    invalid_path_not_binary_file = (
-        Path(__file__).parent / "trades" / "XXBTZUSD" / "data.csv"
-    )
+    invalid_path_not_binary_file = resource_path / "XXBTZUSD" / "data.csv"
     assert not check_historical_data_filepath(invalid_path_not_binary_file, True)
 
-    invalid_path_invalid_feedcode = (
-        Path(__file__).parent / "trades" / "invalid" / "data.bin"
-    )
+    invalid_path_invalid_feedcode = resource_path / "trades" / "invalid" / "data.bin"
     assert not check_historical_data_filepath(invalid_path_invalid_feedcode, True)
 
     invalid_path_not_trade_or_snapshot = (
-        Path(__file__).parent / "trade" / "XXBTZUSD" / "data.bin"
+        resource_path / "trade" / "XXBTZUSD" / "data.bin"
     )
     assert not check_historical_data_filepath(invalid_path_not_trade_or_snapshot, True)
 
-    invalid_path_not_trade = (
-        Path(__file__).parent / "snapshots" / "XXBTZUSD" / "data.bin"
-    )
+    invalid_path_not_trade = resource_path / "snapshots" / "XXBTZUSD" / "data.bin"
     assert not check_historical_data_filepath(invalid_path_not_trade, True)
