@@ -22,6 +22,7 @@ class MockWebSocketClient(WebSocketClient):
     async def on_message(self, message: dict) -> None:
         self.messages.append(message)
 
+
 @pytest.fixture
 async def mock_server() -> AsyncGenerator[Server, None]:
     async def handler(connection: ServerConnection) -> None:
