@@ -1,7 +1,8 @@
 from pathlib import Path
-from pysrc.util.types import Asset
-from pysrc.util.lasso_utils import search_model_in_directory
+
 from pysrc.test.helpers import get_resources_path
+from pysrc.util.lasso_utils import search_model_in_directory
+from pysrc.util.types import Asset
 
 resource_path = get_resources_path(__file__)
 

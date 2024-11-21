@@ -1,9 +1,9 @@
+from collections import defaultdict
 from enum import Enum
 from typing import Optional
 
 from pysrc.adapters.messages import SnapshotMessage
 from pysrc.util.types import Market, OrderSide
-from collections import defaultdict
 
 
 class OrderEventType(Enum):

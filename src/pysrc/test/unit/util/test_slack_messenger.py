@@ -1,10 +1,11 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from pysrc.util.slack_messenger import (
     _format_mention,
     send_slack_message_to_current_server_user,
 )
-from unittest.mock import patch, MagicMock
 
 
 def test_format_mention_special_mentions() -> None:

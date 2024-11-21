@@ -1,19 +1,19 @@
-from datetime import datetime
 import os
 import shutil
 import typing
+from datetime import datetime
 from unittest.mock import MagicMock, patch
+
+import pytest
+from pyzstd import CParameter, compress
+
 from pysrc.adapters.kraken.historical.updates.containers import MBPBook, UpdateDelta
 from pysrc.adapters.kraken.historical.updates.historical_updates_data_client import (
     HistoricalUpdatesDataClient,
 )
-
 from pysrc.adapters.messages import SnapshotMessage
 from pysrc.test.helpers import get_resources_path
 from pysrc.util.types import Market, OrderSide
-import pytest
-
-from pyzstd import compress, CParameter
 
 resource_path = str(get_resources_path(__file__))
 

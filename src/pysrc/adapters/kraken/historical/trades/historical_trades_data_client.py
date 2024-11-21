@@ -112,7 +112,7 @@ class HistoricalTradesDataClient:
 
             merged_file_path = os.path.join(pair_dir_path, pair + ".csv")
             for file_path in file_paths:
-                with open(file_path, "r") as f:
+                with open(file_path) as f:
                     with open(merged_file_path, "a") as merged_f:
                         merged_f.write(f.read())
 

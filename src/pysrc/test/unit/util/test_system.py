@@ -1,14 +1,15 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from pysrc.util.system import (
-    get_current_server,
-    get_current_user,
     _get_current_server_hostname,
     _hostname_to_enum,
+    get_current_server,
+    get_current_user,
     get_current_user_slack_name,
 )
 from pysrc.util.types import Server
-from unittest.mock import patch, MagicMock
 
 
 def test_current_hostname() -> None:

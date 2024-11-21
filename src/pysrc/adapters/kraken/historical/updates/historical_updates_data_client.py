@@ -1,8 +1,8 @@
-from io import BufferedIOBase
 import os
 import struct
 from collections import deque
 from datetime import datetime, timedelta
+from io import BufferedIOBase
 from threading import Condition, Thread
 from typing import Any, Generator, Optional
 

@@ -1,10 +1,12 @@
-from datetime import datetime
 import os
+from datetime import datetime
+
+import numpy as np
+
 from pysrc.adapters.kraken.historical.trades.historical_trades_data_client import (
     HistoricalTradesDataClient,
 )
 from pysrc.test.helpers import get_resources_path
-import numpy as np
 from pysrc.util.types import Market
 
 resource_path = str(get_resources_path(__file__))

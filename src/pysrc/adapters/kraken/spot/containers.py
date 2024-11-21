@@ -1,6 +1,7 @@
-from typing import Optional, List
-from pysrc.util.types import Asset
 from enum import Enum
+from typing import List, Optional
+
+from pysrc.util.types import Asset
 
 
 class SystemStatus(Enum):
