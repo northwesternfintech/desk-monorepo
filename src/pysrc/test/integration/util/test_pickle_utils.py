@@ -1,11 +1,10 @@
-from pathlib import Path
-
 import numpy as np
 
 from pysrc.test.helpers import get_resources_path
 from pysrc.util.pickle_utils import load_pickle, store_pickle
 
 resource_path = get_resources_path(__file__)
+np.random.seed(42)
 sample_data = np.random.rand(10, 10)
 
 
