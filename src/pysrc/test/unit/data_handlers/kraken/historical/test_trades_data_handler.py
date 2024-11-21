@@ -1,9 +1,10 @@
-import pytest
 import random
 
-from pysrc.test.helpers import get_resources_path
-from pysrc.data_handlers.kraken.historical.trades_data_handler import TradesDataHandler
+import pytest
+
 from pysrc.adapters.messages import TradeMessage
+from pysrc.data_handlers.kraken.historical.trades_data_handler import TradesDataHandler
+from pysrc.test.helpers import get_resources_path
 from pysrc.util.types import Market, OrderSide
 
 random.seed(42)

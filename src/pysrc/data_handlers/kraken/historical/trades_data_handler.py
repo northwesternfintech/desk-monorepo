@@ -1,13 +1,14 @@
 import struct
 from pathlib import Path
-from pyzstd import CParameter, ZstdFile, ZstdCompressor
-from typing import Optional, Generator
+from typing import Generator, Optional
 
-from pysrc.data_handlers.kraken.historical.base_data_handler import BaseDataHandler
+from pyzstd import CParameter, ZstdCompressor, ZstdFile
+
 from pysrc.adapters.kraken.asset_mappings import asset_to_kraken, kraken_to_asset
 from pysrc.adapters.messages import TradeMessage
-from pysrc.util.types import Market, OrderSide, Asset
+from pysrc.data_handlers.kraken.historical.base_data_handler import BaseDataHandler
 from pysrc.util.historical_data_utils import check_historical_data_filepath
+from pysrc.util.types import Asset, Market, OrderSide
 
 
 class TradesDataHandler(BaseDataHandler):

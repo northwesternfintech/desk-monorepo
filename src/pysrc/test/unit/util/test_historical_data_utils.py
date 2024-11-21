@@ -1,5 +1,7 @@
-import pytest
 from pathlib import Path
+
+import pytest
+
 from pysrc.util.historical_data_utils import check_historical_data_filepath
 
 

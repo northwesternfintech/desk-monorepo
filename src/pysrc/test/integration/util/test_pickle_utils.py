@@ -1,5 +1,5 @@
 import numpy as np
-from pysrc.util.pickle_utils import store_pickle, load_pickle
+
 from pysrc.test.helpers import get_resources_path
 from pysrc.util.pickle_utils import load_pickle, store_pickle
 

@@ -1,13 +1,14 @@
-import numpy as np
 import struct
 from pathlib import Path
-from pyzstd import ZstdFile, CParameter, ZstdCompressor
-from typing import Optional, Generator
+from typing import Generator, Optional
 
-from pysrc.data_handlers.kraken.historical.base_data_handler import BaseDataHandler
+import numpy as np
+from pyzstd import CParameter, ZstdCompressor, ZstdFile
+
 from pysrc.adapters.messages import SnapshotMessage
-from pysrc.util.types import Market
+from pysrc.data_handlers.kraken.historical.base_data_handler import BaseDataHandler
 from pysrc.util.historical_data_utils import check_historical_data_filepath
+from pysrc.util.types import Market
 
 
 class SnapshotsDataHandler(BaseDataHandler):

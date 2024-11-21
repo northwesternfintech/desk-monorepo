@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Generator
-from pysrc.adapters.messages import TradeMessage, SnapshotMessage
+
+from pysrc.adapters.messages import SnapshotMessage, TradeMessage
 
 
 class BaseDataHandler(ABC):

@@ -1,11 +1,12 @@
-import pytest
 import random
 
-from pysrc.test.helpers import get_resources_path
+import pytest
+
+from pysrc.adapters.messages import SnapshotMessage
 from pysrc.data_handlers.kraken.historical.snapshots_data_handler import (
     SnapshotsDataHandler,
 )
-from pysrc.adapters.messages import SnapshotMessage
+from pysrc.test.helpers import get_resources_path
 from pysrc.util.types import Market
 
 random.seed(42)
