@@ -1,4 +1,3 @@
-import numpy as np
 import struct
 from pathlib import Path
 from pyzstd import CParameter, ZstdFile, ZstdCompressor
@@ -8,6 +7,7 @@ from pysrc.data_handlers.kraken.historical.base_data_handler import BaseDataHand
 from pysrc.adapters.kraken.asset_mappings import asset_to_kraken, kraken_to_asset
 from pysrc.adapters.messages import TradeMessage
 from pysrc.util.types import Market, OrderSide, Asset
+from pysrc.util.historical_data_utils import check_historical_data_filepath
 
 
 class TradesDataHandler(BaseDataHandler):
@@ -21,15 +21,11 @@ class TradesDataHandler(BaseDataHandler):
         self._record_size = 17
         self._zstd_options = {CParameter.compressionLevel: 10}
 
-    def _trades_to_numpy(self, trades: list[TradeMessage]) -> np.ndarray:
-        arr = np.empty(len(trades), dtype=self._np_dtype)
-        for i, trade in enumerate(trades):
-            arr[i] = (trade.time, trade.price, trade.quantity, trade.side.value)
-        return arr
-
     def read(self, input_path: Path) -> list[TradeMessage]:
         if not input_path.exists():
             raise ValueError(f"Expected file '{input_path}' does not exist")
+        if not check_historical_data_filepath(input_path, True):
+            raise ValueError(f"Invalid input trades file path: {input_path}")
         trades = []
         asset = kraken_to_asset(input_path.parent.name)
         with ZstdFile(input_path, "rb") as f:
@@ -41,6 +37,8 @@ class TradesDataHandler(BaseDataHandler):
         return trades
 
     def write(self, output_path: Path, data: list[TradeMessage]) -> None:
+        if not check_historical_data_filepath(output_path, True):
+            raise ValueError(f"Invalid output trades file path: {output_path}")
         compressor = ZstdCompressor(level_or_option=self._zstd_options)
         out = b""
         with open(output_path, "wb") as f:
@@ -73,6 +71,8 @@ class TradesDataHandler(BaseDataHandler):
     def stream_read(self, input_path: Path) -> Generator[TradeMessage, None, None]:
         if not input_path.exists():
             raise ValueError(f"Expected file '{input_path}' does not exist")
+        if not check_historical_data_filepath(input_path, True):
+            raise ValueError(f"Invalid input trades file path: {input_path}")
         asset = kraken_to_asset(input_path.parent.name)
         with ZstdFile(input_path, "rb") as f:
             while True:

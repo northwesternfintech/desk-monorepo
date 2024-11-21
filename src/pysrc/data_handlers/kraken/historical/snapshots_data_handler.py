@@ -7,6 +7,7 @@ from typing import Optional, Generator
 from pysrc.data_handlers.kraken.historical.base_data_handler import BaseDataHandler
 from pysrc.adapters.messages import SnapshotMessage
 from pysrc.util.types import Market
+from pysrc.util.historical_data_utils import check_historical_data_filepath
 
 
 class SnapshotsDataHandler(BaseDataHandler):
@@ -17,6 +18,8 @@ class SnapshotsDataHandler(BaseDataHandler):
     def read(self, input_path: Path) -> list[SnapshotMessage]:
         if not input_path.exists():
             raise ValueError(f"Expected file '{input_path}' does not exist")
+        if not check_historical_data_filepath(input_path, False):
+            raise ValueError(f"Invalid input snapshots file path: {input_path}")
         snapshots = []
         with ZstdFile(input_path, "rb") as f:
             while True:
@@ -27,6 +30,8 @@ class SnapshotsDataHandler(BaseDataHandler):
         return snapshots
 
     def write(self, output_path: Path, data: list[SnapshotMessage]) -> None:
+        if not check_historical_data_filepath(output_path, False):
+            raise ValueError(f"Invalid output snapshots file path: {output_path}")
         compressor = ZstdCompressor(level_or_option=self._zstd_options)
         out = b""
         with open(output_path, "wb") as f:
@@ -73,6 +78,8 @@ class SnapshotsDataHandler(BaseDataHandler):
     def stream_read(self, input_path: Path) -> Generator[SnapshotMessage, None, None]:
         if not input_path.exists():
             raise ValueError(f"Expected file '{input_path}' does not exist")
+        if not check_historical_data_filepath(input_path, False):
+            raise ValueError(f"Invalid input snapshots file path: {input_path}")
         with ZstdFile(input_path, "rb") as f:
             while True:
                 snapshot = self._snapshot_message_from_stream(f)
