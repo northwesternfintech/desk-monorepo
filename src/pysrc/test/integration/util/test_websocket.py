@@ -2,14 +2,14 @@ import pytest
 import asyncio
 import json
 from websockets.asyncio.server import serve, Server, ServerConnection
-from typing import AsyncGenerator, List
+from typing import AsyncGenerator
 from pysrc.util.websocket import WebSocketClient
 
 
 class MockWebSocketClient(WebSocketClient):
     def __init__(self, base_url: str):
         super().__init__(base_url)
-        self.messages: List[dict] = []
+        self.messages: list[dict] = []
 
     async def on_connect(self) -> None:
         subscribe_message = {"event": "subscribe", "feed": "test_feed"}
