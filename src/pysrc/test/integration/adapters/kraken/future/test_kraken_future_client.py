@@ -1,16 +1,17 @@
 import os
+
+import pytest
+
 from pysrc.adapters.kraken.future.containers import (
     Order,
     OrderRequest,
     OrderStatus,
     OrderType,
-    TradeHistoryType,
     TradeHistory,
+    TradeHistoryType,
 )
 from pysrc.adapters.kraken.future.kraken_future_client import KrakenFutureClient
 from pysrc.util.types import OrderSide
-
-import pytest
 
 pytestmark = pytest.mark.skipif(
     os.getenv("KRAKEN_FUTURE_API_PUBLIC_KEY") is None

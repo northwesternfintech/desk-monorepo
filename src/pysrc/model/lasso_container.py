@@ -1,7 +1,8 @@
 from pathlib import Path
-from pysrc.util.types import Asset
+
 from pysrc.util.lasso_utils import asset_to_model_filename, search_model_in_directory
 from pysrc.util.pickle_utils import load_pickle
+from pysrc.util.types import Asset
 
 
 class LassoContainer:

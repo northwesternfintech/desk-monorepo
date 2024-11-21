@@ -1,7 +1,7 @@
-from pysrc.util.types import OrderSide, LiquidityType
-from pysrc.util.instrument import Instrument
-
 from typing import Optional
+
+from pysrc.util.instrument import Instrument
+from pysrc.util.types import LiquidityType, OrderSide
 
 
 class Action:

@@ -1,11 +1,13 @@
-import numpy as np
 from pathlib import Path
-from pysrc.util.types import Asset
-from pysrc.util.enum_conversions import enum_to_string
-from pysrc.util.pickle_utils import load_pickle
+
+import numpy as np
+import pytest
+
 from pysrc.model.lasso_container import LassoContainer
 from pysrc.test.helpers import get_resources_path
-import pytest
+from pysrc.util.enum_conversions import enum_to_string
+from pysrc.util.pickle_utils import load_pickle
+from pysrc.util.types import Asset
 
 resource_path = get_resources_path(__file__)
 

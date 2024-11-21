@@ -1,9 +1,10 @@
 import asyncio
-import websockets
 import json
 from abc import ABC, abstractmethod
-from websockets.asyncio.client import ClientConnection
 from typing import Optional
+
+import websockets
+from websockets.asyncio.client import ClientConnection
 
 
 class WebSocketClient(ABC):

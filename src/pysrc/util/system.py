@@ -1,7 +1,8 @@
-import socket
 import getpass
-from pysrc.util.types import Server
+import socket
+
 from pysrc.util.exceptions import DIE
+from pysrc.util.types import Server
 
 SERVER_USERNAME_TO_SLACK_NAME: dict[str, str] = {
     "echavemann": "Ethan Havemann",

@@ -1,4 +1,7 @@
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from pysrc.adapters.kraken.future.containers import (
     Order,
     OrderRequest,
@@ -8,7 +11,6 @@ from pysrc.adapters.kraken.future.containers import (
 )
 from pysrc.adapters.kraken.future.kraken_future_client import KrakenFutureClient
 from pysrc.util.types import OrderSide
-import pytest
 
 
 @pytest.fixture

@@ -1,15 +1,17 @@
-import pytest
-from pysrc.adapters.kraken.spot.kraken_client import KrakenClient
 from enum import Enum
-from pysrc.util.types import Asset
+
+import pytest
+
 from pysrc.adapters.kraken.spot.containers import (
-    SystemStatus,
     AssetInfo,
     AssetPairInfo,
-    OHLCData,
     AssetStatus,
+    OHLCData,
     OHLCTick,
+    SystemStatus,
 )
+from pysrc.adapters.kraken.spot.kraken_client import KrakenClient
+from pysrc.util.types import Asset
 
 
 def test_system_status() -> None:

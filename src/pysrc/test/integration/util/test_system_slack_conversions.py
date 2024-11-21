@@ -1,9 +1,10 @@
-from pysrc.util.system import SERVER_USERNAME_TO_SLACK_NAME
-from pysrc.util.slack_messenger import does_slack_user_exist
-from pysrc.util.slack_utils import get_slack_id_by_name
+import os
 
 import pytest
-import os
+
+from pysrc.util.slack_messenger import does_slack_user_exist
+from pysrc.util.slack_utils import get_slack_id_by_name
+from pysrc.util.system import SERVER_USERNAME_TO_SLACK_NAME
 
 
 @pytest.mark.skipif(

@@ -1,7 +1,8 @@
-from pysrc.adapters.messages import SnapshotMessage, TradeMessage
-from pysrc.util.types import Asset
-from pysrc.signal.base_feature_generator import BaseFeatureGenerator
 from typing import override
+
+from pysrc.adapters.messages import SnapshotMessage, TradeMessage
+from pysrc.signal.base_feature_generator import BaseFeatureGenerator
+from pysrc.util.types import Asset
 
 
 class ExampleFeatureGenerator(BaseFeatureGenerator):

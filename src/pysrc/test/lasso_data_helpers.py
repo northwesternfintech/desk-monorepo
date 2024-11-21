@@ -1,13 +1,14 @@
-import numpy as np
 from pathlib import Path
-from pysrc.util.types import Asset
-from pysrc.util.lasso_utils import asset_to_model_filename
-from pysrc.util.pickle_utils import store_pickle
-from pysrc.util.enum_conversions import enum_to_string
 
+import numpy as np
+from sklearn.datasets import make_regression
 from sklearn.linear_model import Lasso
 from sklearn.model_selection import train_test_split
-from sklearn.datasets import make_regression
+
+from pysrc.util.enum_conversions import enum_to_string
+from pysrc.util.lasso_utils import asset_to_model_filename
+from pysrc.util.pickle_utils import store_pickle
+from pysrc.util.types import Asset
 
 
 def generate_sample_lasso_model_and_data(**kwargs: float) -> tuple:

@@ -5,9 +5,9 @@ from pysrc.adapters.kraken.future.containers import (
     OrderType,
     PositionSide,
     PriceUnit,
-    TriggerSignal,
-    TradeHistoryType,
     TradeHistory,
+    TradeHistoryType,
+    TriggerSignal,
 )
 from pysrc.util.types import OrderSide
 

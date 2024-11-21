@@ -1,4 +1,4 @@
-from pysrc.util.types import Market, Asset
+from pysrc.util.types import Asset, Market
 
 
 class Instrument:

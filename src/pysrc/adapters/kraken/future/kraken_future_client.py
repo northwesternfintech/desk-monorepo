@@ -12,22 +12,20 @@ from pysrc.adapters.kraken.future.containers import (
     OrderStatus,
     TradeHistory,
 )
-
 from pysrc.adapters.kraken.future.utils import (
+    kraken_encode_dict,
     order_side_to_str,
     order_status_to_str,
     order_type_to_str,
     price_unit_to_str,
+    serialize_history,
     str_to_order_side,
     str_to_order_status,
     str_to_order_type,
     str_to_position_side,
     str_to_trigger_signal,
     trigger_signal_to_str,
-    kraken_encode_dict,
-    serialize_history,
 )
-
 from pysrc.adapters.messages import SnapshotMessage
 from pysrc.util.types import Market
 

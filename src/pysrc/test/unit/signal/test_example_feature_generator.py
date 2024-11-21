@@ -1,7 +1,8 @@
 import pytest
+
+from pysrc.adapters.messages import SnapshotMessage, TradeMessage
 from pysrc.signal.example_feature_generator import ExampleFeatureGenerator
-from pysrc.adapters.messages import TradeMessage, SnapshotMessage
-from pysrc.util.types import Asset, OrderSide, Market
+from pysrc.util.types import Asset, Market, OrderSide
 
 trades_map = {
     "BTC": [
