@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from websockets.asyncio.client import ClientConnection
 from typing import Optional
 
-
 class WebSocketClient(ABC):
     def __init__(
         self, base_url: str, max_retries: int = 5, retry_delay: int = 5
