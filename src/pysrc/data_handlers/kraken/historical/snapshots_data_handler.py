@@ -10,8 +10,7 @@ from pysrc.util.types import Market
 
 
 class SnapshotsDataHandler(BaseDataHandler):
-    def __init__(self, write_size: int = 1000) -> None:
-        self._write_size = write_size
+    def __init__(self) -> None:
         self._metadata_size = 24
         self._zstd_options = {CParameter.compressionLevel: 10}
 
@@ -30,16 +29,11 @@ class SnapshotsDataHandler(BaseDataHandler):
     def write(self, output_path: Path, data: list[SnapshotMessage]) -> None:
         compressor = ZstdCompressor(level_or_option=self._zstd_options)
         out = b""
-        count = 0
         with open(output_path, "wb") as f:
             for snapshot in data:
-                out += snapshot.to_bytes()
-                count += 1
-                if count >= self._write_size:
-                    f.write(compressor.compress(out, ZstdCompressor.FLUSH_FRAME))
-                    out = b""
-                    count = 0
-            f.write(compressor.compress(out, ZstdCompressor.FLUSH_FRAME))
+                out = snapshot.to_bytes()
+                f.write(compressor.compress(out))
+            f.write(compressor.flush())
 
     def _snapshot_message_from_stream(
         self, file: ZstdFile

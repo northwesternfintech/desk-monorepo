@@ -13,7 +13,7 @@ resource_path = get_resources_path(__file__)
 
 
 def test_read_write_to_file() -> None:
-    handler = SnapshotsDataHandler(2)
+    handler = SnapshotsDataHandler()
 
     snapshots = [
         SnapshotMessage(
@@ -53,7 +53,7 @@ def test_read_write_to_file() -> None:
 
 
 def test_stream_data() -> None:
-    handler = SnapshotsDataHandler(2)
+    handler = SnapshotsDataHandler()
 
     snapshots = []
     for i in range(10):
