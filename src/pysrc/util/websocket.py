@@ -8,10 +8,10 @@ from typing import Optional
 
 class WebSocketClient(ABC):
     def __init__(
-        self, base_url: str, max_retries: int = 5, retry_delay: int = 5
+        self, base_url: str, retry_delay: int = 5, max_retries: Optional[int] = None
     ) -> None:
         self.base_url = base_url
-        self.max_retries = max_retries  # -1 for infinite
+        self.max_retries = max_retries
         self.retry_delay = retry_delay
         self.ws: Optional[ClientConnection] = None
         self._listener_task: Optional[asyncio.Task] = None
@@ -22,7 +22,7 @@ class WebSocketClient(ABC):
 
     async def _connect_and_listen(self) -> None:
         retries = 0
-        while self.max_retries == -1 or retries < self.max_retries:
+        while self.max_retries is None or retries < self.max_retries:
             try:
                 print(
                     f"Connecting to WebSocket at {self.base_url} (Attempt {retries + 1})..."
@@ -46,7 +46,7 @@ class WebSocketClient(ABC):
                 await self.on_disconnect()
 
             retries += 1
-            if self.max_retries != -1 and retries >= self.max_retries:
+            if self.max_retries is not None and retries >= self.max_retries:
                 print("Max retries reached. Shutting websocket down.")
                 break
             print(f"Retrying in {self.retry_delay} seconds...")
@@ -64,7 +64,7 @@ class WebSocketClient(ABC):
                         await self.on_message(data)
                     except json.JSONDecodeError:
                         print("Failed to parse message")
-                    await asyncio.sleep(0.1)  # small delay for processing, can change
+                    await asyncio.sleep(0.1)
         except websockets.ConnectionClosed as e:
             print(f"WebSocket connection closed during listening: {e}")
         except Exception as e:
