@@ -55,7 +55,7 @@ async def test_mock_websocket_client(mock_server: AsyncGenerator[Server, None]) 
     client.start()
 
     try:
-        await asyncio.sleep(1)  
+        await asyncio.sleep(1)
 
         assert len(client.messages) > 0, "Client should have received messages."
         assert any(
