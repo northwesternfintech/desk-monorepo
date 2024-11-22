@@ -107,7 +107,7 @@ class KrakenClient:
         last_timestamp = response["result"].get("last", None)
 
         pair_name = list(response["result"].keys())[0]
-        tick_data = response["result"][asset_to_kraken(asset)]
+        tick_data = response["result"][asset_to_kraken(asset, Market.KRAKEN_SPOT)]
 
         ohlc_ticks = [
             OHLCTick(
@@ -136,7 +136,7 @@ class KrakenClient:
         params = {"pair": pair_param, "count": num_entries}
 
         response = self._get(route, params=params)
-        order_book_data = response["result"][asset_to_kraken(asset)]
+        order_book_data = response["result"][asset_to_kraken(asset, Market.KRAKEN_SPOT)]
         bids = [[price, volume] for price, volume, _ in order_book_data["bids"]]
         asks = [[price, volume] for price, volume, _ in order_book_data["asks"]]
         timestamp = int(order_book_data["bids"][0][2])
@@ -162,7 +162,7 @@ class KrakenClient:
 
         response = self._get(route, params=params)
 
-        trade_data = response["result"][asset_to_kraken(asset)]
+        trade_data = response["result"][asset_to_kraken(asset, Market.KRAKEN_SPOT)]
         trades = []
 
         for trade in trade_data:
@@ -197,7 +197,7 @@ class KrakenClient:
 
         response = self._get(route, params=params)
 
-        spread_data = response["result"][asset_to_kraken(asset)]
+        spread_data = response["result"][asset_to_kraken(asset, Market.KRAKEN_SPOT)]
         spreads = []
 
         for spread in spread_data:
