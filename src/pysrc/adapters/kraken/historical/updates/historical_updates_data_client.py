@@ -1,5 +1,6 @@
 from io import BufferedIOBase
 import os
+from pathlib import Path
 import struct
 from datetime import datetime, timedelta
 from threading import Thread
@@ -7,6 +8,7 @@ from typing import Any, Generator, Optional
 
 import numpy as np
 import requests
+from pysrc.data_handlers.kraken.historical.snapshots_data_handler import SnapshotsDataHandler
 from pyzstd import CParameter, EndlessZstdDecompressor, ZstdCompressor
 
 from pysrc.adapters.kraken.historical.updates.containers import (
@@ -37,8 +39,7 @@ class HistoricalUpdatesDataClient:
         self._last_saved_sec = -1
         self._cur_sec = -1
 
-        self._zstd_options = {CParameter.compressionLevel: 10}
-        self._decompress_buffer = b""
+        self._snapshot_handler = SnapshotsDataHandler()
 
     def _request(self, route: str, params: dict[str, Any]) -> Any:
         res = self._session.get(route, params=params)
@@ -231,6 +232,11 @@ class HistoricalUpdatesDataClient:
         asset: str,
         day: datetime,
     ) -> str:
+        snapshot_dir = Path(self._resource_path) / asset / "snapshots"
+        asset_path = os.path.join(self._resource_path, asset)
+        if not os.path.exists(asset_path):
+            os.mkdir(asset_path)
+
         file_path = os.path.join(self._resource_path, asset, day.strftime("%m_%d_%Y"))
         compressor = ZstdCompressor(level_or_option=self._zstd_options)
 
@@ -289,10 +295,6 @@ class HistoricalUpdatesDataClient:
         if max_retry_count is None:
             max_retry_count = 3
 
-        asset_path = os.path.join(self._resource_path, asset)
-        if not os.path.exists(asset_path):
-            os.mkdir(asset_path)
-
         if not until:
             until = datetime.today()
 
@@ -330,92 +332,3 @@ class HistoricalUpdatesDataClient:
                 raise ValueError(
                     f"Failed to download updates for '{asset}' for date '{failed_day_str}'"
                 )
-
-    def _decompress_bytes(
-        self, decompressor: EndlessZstdDecompressor, f: BufferedIOBase, output_size: int
-    ) -> bytes:
-        while len(self._decompress_buffer) < output_size:
-            if decompressor.needs_input:
-                f_data = f.read(1024**2)
-
-                if not f_data:
-                    break
-            else:
-                f_data = b""
-
-            self._decompress_buffer += decompressor.decompress(
-                f_data, max_length=output_size
-            )
-
-        out = self._decompress_buffer[:output_size]
-        self._decompress_buffer = self._decompress_buffer[output_size:]
-
-        return out
-
-    def _snapshot_message_from_stream(
-        self, decompressor: EndlessZstdDecompressor, f: BufferedIOBase
-    ) -> Optional[SnapshotMessage]:
-        packed_metadata = self._decompress_bytes(decompressor, f, 24)
-        if not packed_metadata:
-            return None
-        elif len(packed_metadata) < 24:
-            raise ValueError("Failed to read metadata from stream")
-
-        time, market_value, feedcode_size, bids_size, asks_size = struct.unpack(
-            "QIIII", packed_metadata
-        )
-
-        feedcode_data = self._decompress_bytes(decompressor, f, feedcode_size)
-        if len(feedcode_data) != feedcode_size:
-            raise ValueError("Failed to read feedcode from stream")
-
-        bids_bytes = self._decompress_bytes(decompressor, f, bids_size)
-        if len(bids_bytes) != bids_size:
-            raise ValueError("Failed to read bids from stream")
-        bids = np.frombuffer(bids_bytes)
-
-        asks_bytes = self._decompress_bytes(decompressor, f, asks_size)
-        if len(asks_bytes) != asks_size:
-            raise ValueError("Failed to read asks from stream")
-        asks = np.frombuffer(asks_bytes)
-
-        return SnapshotMessage(
-            time=time,
-            feedcode=feedcode_data.decode(),
-            market=Market(market_value),
-            bids=bids.reshape((-1, 2)).tolist(),
-            asks=asks.reshape((-1, 2)).tolist(),
-        )
-
-    def stream_updates(
-        self, asset: str, since: datetime, until: Optional[datetime]
-    ) -> Generator[SnapshotMessage, None, None]:
-        asset_path = os.path.join(self._resource_path, asset)
-        if not os.path.exists(asset_path):
-            raise ValueError(f"No directory for `{asset}` found in resource path")
-
-        if not until:
-            until = datetime.today()
-
-        for i in range((until - since).days):
-            cur = since + timedelta(days=i)
-            cur_file_name = cur.strftime("%m_%d_%Y")
-            cur_path = os.path.join(asset_path, cur_file_name)
-
-            if not os.path.exists(cur_path):
-                raise ValueError(f"Expected file '{cur_path}' does not exist")
-
-        decompressor = EndlessZstdDecompressor()
-
-        for i in range((until - since).days):
-            cur = since + timedelta(days=i)
-            cur_file_name = cur.strftime("%m_%d_%Y")
-            cur_path = os.path.join(asset_path, cur_file_name)
-
-            with open(cur_path, "rb") as f:
-                while True:
-                    snapshot = self._snapshot_message_from_stream(decompressor, f)
-                    if not snapshot:
-                        break
-
-                    yield snapshot
