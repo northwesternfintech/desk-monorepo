@@ -1,6 +1,6 @@
+import logging
 import os
 from typing import Optional
-import logging
 
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -12,6 +12,7 @@ SPECIAL_MENTIONS = ("here", "everyone", "channel")
 
 _client: Optional[WebClient] = None
 _logger = logging.getLogger(__name__)
+
 
 def _get_client() -> WebClient:
     global _client

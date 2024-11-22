@@ -1,6 +1,6 @@
 import getpass
-import socket
 import logging
+import socket
 
 from pysrc.util.exceptions import DIE
 from pysrc.util.types import Server

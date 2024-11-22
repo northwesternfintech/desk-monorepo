@@ -1,13 +1,14 @@
 import asyncio
 import json
+import logging
 from abc import ABC, abstractmethod
 from typing import Optional
-import logging
 
 import websockets
 from websockets.asyncio.client import ClientConnection
 
 _logger = logging.getLogger(__name__)
+
 
 class WebSocketClient(ABC):
     def __init__(
