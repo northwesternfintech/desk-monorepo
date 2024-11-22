@@ -2,18 +2,18 @@ import itertools
 import os
 from datetime import datetime
 from pathlib import Path
+from typing import Iterable
 
 import numpy as np
 from dateutil.rrule import DAILY, rrule
 
+from pysrc.adapters.kraken.asset_mappings import kraken_to_asset
 from pysrc.adapters.messages import SnapshotMessage, TradeMessage
 from pysrc.data_handlers.kraken.historical.snapshots_data_handler import (
     SnapshotsDataHandler,
 )
 from pysrc.data_handlers.kraken.historical.trades_data_handler import TradesDataHandler
 from pysrc.signal.base_feature_generator import BaseFeatureGenerator
-from pysrc.util.enum_conversions import string_to_enum
-from pysrc.util.types import Asset
 
 
 class Evaluator:
@@ -30,7 +30,7 @@ class Evaluator:
         end: datetime,
         trades_resource_path: str,
         snapshots_resource_path: str,
-    ) -> zip[tuple[TradeMessage, SnapshotMessage]]:
+    ) -> Iterable[tuple[TradeMessage, SnapshotMessage]]:
         trades_client = TradesDataHandler()
         snapshots_client = SnapshotsDataHandler()
 
@@ -64,14 +64,23 @@ class Evaluator:
         data = self._get_data_daterange(
             self.start, self.end, trades_filepath, snapshots_filepath
         )
-        feature_dict: dict[str, list[float]] = dict.fromkeys(self.features, [])
+
+        feature_dict: dict[str, list[float]] = {}
+        for feature in self.features:
+            feature_dict[feature] = []
+
         for trade, snapshot in data:
-            features = generator_client.on_tick(
+            print("huh")
+            print(trade)
+            print(snapshot)
+            calc_features = generator_client.on_tick(
                 {self.asset: snapshot}, {self.asset: [trade]}
             )
+            print(calc_features)
             for feature in self.features:
-                asset_enum = string_to_enum(Asset, self.asset)
-                feature_dict[feature].extend(features[asset_enum][feature])
+                asset_enum = kraken_to_asset(self.asset)
+                feature_dict[feature].extend(calc_features[asset_enum][feature])
+                print(id(feature_dict[feature]))
         return feature_dict
 
     # Suppose that returns is passed to evaluate_features
@@ -81,5 +90,4 @@ class Evaluator:
         input_matrix = []
         for feature in self.features:
             input_matrix.append(calc_features[feature])
-        input_matrix.append(target)
-        return np.corrcoef(input_matrix)
+        return np.corrcoef(input_matrix, target)
