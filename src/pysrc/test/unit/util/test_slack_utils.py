@@ -1,11 +1,12 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
+from slack_sdk.web.client import WebClient
 
 from pysrc.util.slack_utils import (
-    get_user_if_valid,
     get_slack_id_by_name,
+    get_user_if_valid,
 )
-from unittest.mock import patch, MagicMock
-from slack_sdk.web.client import WebClient
 
 
 @patch("pysrc.util.slack_utils._get_users")

@@ -19,11 +19,30 @@ types-requests = "^2.28.0"
 scikit-learn = "^1.5.2"
 numpy = "^2.1.2"
 pyzstd = "^0.16.2"
+pytest-asyncio = "^0.21.2"
+websockets = "^14.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.ruff.lint]
+select = [
+    # isort
+    "I",
+    # pyflakes
+    "F",
+    # pycodestyle
+    "E",
+    "UP"
+]
+ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "test_*.py" = ["F401"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+markers = [
+    "asyncio: mark a test as asyncio-based"
+]

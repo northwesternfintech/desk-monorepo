@@ -1,6 +1,8 @@
-from pysrc.util.slack_messenger import does_slack_user_exist
-import pytest
 import os
+
+import pytest
+
+from pysrc.util.slack_messenger import does_slack_user_exist
 
 
 @pytest.mark.skipif(

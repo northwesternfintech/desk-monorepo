@@ -1,6 +1,7 @@
-from pysrc.adapters.kraken.future.containers import safe_at, get_single
-from pysrc.util.exceptions import DIE
 import pytest
+
+from pysrc.adapters.kraken.future.containers import get_single, safe_at
+from pysrc.util.exceptions import DIE
 
 
 def test_safe_at_success() -> None:

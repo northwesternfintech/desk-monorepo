@@ -1,12 +1,15 @@
 from typing import Any
+
+import pytest
+
 from pysrc.adapters.kraken.future.containers import (
     OrderStatus,
     OrderType,
     PositionSide,
     PriceUnit,
-    TriggerSignal,
-    TradeHistoryType,
     TradeHistory,
+    TradeHistoryType,
+    TriggerSignal,
 )
 from pysrc.adapters.kraken.future.utils import (
     kraken_encode_dict,
@@ -22,12 +25,10 @@ from pysrc.adapters.kraken.future.utils import (
     str_to_position_side,
     str_to_price_unit,
     str_to_trigger_signal,
-    trigger_signal_to_str,
     string_to_history_type,
+    trigger_signal_to_str,
 )
 from pysrc.util.types import OrderSide
-
-import pytest
 
 
 def test_remove_empty_values() -> None:

@@ -8,7 +8,9 @@ class BaseFeatureGenerator:
         raise NotImplementedError
 
     def on_tick(
-        self, snapshots: dict[str, SnapshotMessage], trades: dict[str, TradeMessage]
+        self,
+        snapshots: dict[str, SnapshotMessage],
+        trades: dict[str, list[TradeMessage]],
     ) -> dict[Asset, dict[str, list[float]]]:
         # compute all features. BE CERTAIN that the output order matches the order of your trained model.
         raise NotImplementedError
