@@ -2,7 +2,7 @@ import logging
 import logging.config
 import os
 
-log_dir = "./logs/"
+log_dir = "src/pysrc/logger/logs/"
 os.makedirs(log_dir, exist_ok=True)
 
 
