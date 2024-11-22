@@ -1,55 +1,70 @@
 import itertools
-import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterable
 
 import numpy as np
-from dateutil.rrule import DAILY, rrule
 
-from pysrc.adapters.kraken.asset_mappings import kraken_to_asset
+from pysrc.adapters.kraken.asset_mappings import asset_to_kraken
 from pysrc.adapters.messages import SnapshotMessage, TradeMessage
 from pysrc.data_handlers.kraken.historical.snapshots_data_handler import (
     SnapshotsDataHandler,
 )
 from pysrc.data_handlers.kraken.historical.trades_data_handler import TradesDataHandler
 from pysrc.signal.base_feature_generator import BaseFeatureGenerator
+from pysrc.util.types import Asset, Market
 
 
 class Evaluator:
-    def __init__(self, features: list[str], asset: str, start: datetime, end: datetime):
+    def __init__(
+        self,
+        features: list[str],
+        asset: Asset,
+        market: Market,
+        start: datetime,
+        end: datetime,
+        resource_path: Path,
+    ):
         self.features = features
         self.asset = asset
         self.start = start
         self.end = end
-        pass
+        self.market = market
+        self.resource_path = resource_path
 
     def _get_data_daterange(
         self,
         start: datetime,
         end: datetime,
-        trades_resource_path: str,
-        snapshots_resource_path: str,
     ) -> Iterable[tuple[TradeMessage, SnapshotMessage]]:
         trades_client = TradesDataHandler()
         snapshots_client = SnapshotsDataHandler()
 
         trade_generators = []
         snapshot_generators = []
+        delta_time = timedelta(days=1)
+        asset_str = asset_to_kraken(self.asset, self.market)
 
-        for date in rrule(DAILY, dtstart=start, until=end):
-            trades_filepath = os.path.join(
-                trades_resource_path, self.asset, date.strftime("%m_%d_%Y") + ".bin"
+        while start <= end:
+            trades_filepath = (
+                self.resource_path
+                / "trades"
+                / asset_str
+                / (start.strftime("%m_%d_%Y") + ".bin")
             )
-            trade_gen = trades_client.stream_read(Path(trades_filepath))
+            trade_gen = trades_client.stream_read(trades_filepath)
 
-            snapshots_filepath = os.path.join(
-                snapshots_resource_path, self.asset, date.strftime("%m_%d_%Y") + ".bin"
+            snapshots_filepath = (
+                self.resource_path
+                / "snapshots"
+                / asset_str
+                / (start.strftime("%m_%d_%Y") + ".bin")
             )
-            snapshot_gen = snapshots_client.stream_read(Path(snapshots_filepath))
+            snapshot_gen = snapshots_client.stream_read(snapshots_filepath)
 
             trade_generators.append(trade_gen)
             snapshot_generators.append(snapshot_gen)
+            start += delta_time
 
         combined_trades_gen = itertools.chain.from_iterable(trade_generators)
         combined_snapshots_gen = itertools.chain.from_iterable(snapshot_generators)
@@ -58,32 +73,23 @@ class Evaluator:
     def calculate_features(
         self,
         generator_client: BaseFeatureGenerator,
-        trades_filepath: str,
-        snapshots_filepath: str,
     ) -> dict[str, list[float]]:
-        data = self._get_data_daterange(
-            self.start, self.end, trades_filepath, snapshots_filepath
-        )
+        data = self._get_data_daterange(self.start, self.end)
 
         feature_dict: dict[str, list[float]] = {}
         for feature in self.features:
             feature_dict[feature] = []
 
+        asset_str = asset_to_kraken(self.asset, self.market)
+
         for trade, snapshot in data:
-            print("huh")
-            print(trade)
-            print(snapshot)
             calc_features = generator_client.on_tick(
-                {self.asset: snapshot}, {self.asset: [trade]}
+                {asset_str: snapshot}, {asset_str: [trade]}
             )
-            print(calc_features)
             for feature in self.features:
-                asset_enum = kraken_to_asset(self.asset)
-                feature_dict[feature].extend(calc_features[asset_enum][feature])
-                print(id(feature_dict[feature]))
+                feature_dict[feature].extend(calc_features[self.asset][feature])
         return feature_dict
 
-    # Suppose that returns is passed to evaluate_features
     def evaluate_features(
         self, calc_features: dict[str, list[float]], target: list[float]
     ) -> np.ndarray:

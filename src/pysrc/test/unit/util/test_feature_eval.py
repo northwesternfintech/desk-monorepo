@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 from pyzstd import CParameter, compress
@@ -9,18 +10,26 @@ from pysrc.signal.base_feature_generator import BaseFeatureGenerator
 from pysrc.test.feature_eval_helpers import TestFeatureGenerator
 from pysrc.test.helpers import get_resources_path
 from pysrc.util.feature_eval import Evaluator
-from pysrc.util.types import Market, OrderSide
+from pysrc.util.types import Asset, Market, OrderSide
 
-resource_path = str(get_resources_path(__file__))
+resource_path = get_resources_path(__file__)
 
 
 @pytest.fixture
 def client() -> Evaluator:
     test_features = ["a", "b", "c"]
-    asset = "XXBTZUSD"
+    asset = Asset.BTC
+    market = Market.KRAKEN_SPOT
     start = datetime(year=2024, month=11, day=22)
     end = datetime(year=2024, month=11, day=22)
-    return Evaluator(features=test_features, asset=asset, start=start, end=end)
+    return Evaluator(
+        features=test_features,
+        asset=asset,
+        market=market,
+        start=start,
+        end=end,
+        resource_path=resource_path,
+    )
 
 
 @pytest.fixture
@@ -28,7 +37,6 @@ def feature_gen() -> BaseFeatureGenerator:
     return TestFeatureGenerator()
 
 
-# Test feature calculation
 def test_feature_calculation(
     client: Evaluator, feature_gen: BaseFeatureGenerator
 ) -> None:
@@ -60,9 +68,10 @@ def test_feature_calculation(
     for s in snapshots:
         snapshots_bytes += s.to_bytes()
 
-    test_dir_snapshots = os.path.join(resource_path, "snapshots/XXBTZUSD")
+    test_dir_snapshots = resource_path / "snapshots" / "XXBTZUSD"
     os.makedirs(test_dir_snapshots, exist_ok=True)
-    test_path = os.path.join(test_dir_snapshots, "11_22_2024.bin")
+    test_path = test_dir_snapshots / "11_22_2024.bin"
+
     with open(test_path, "wb") as f:
         f.write(
             compress(snapshots_bytes, level_or_option={CParameter.compressionLevel: 10})
@@ -84,23 +93,21 @@ def test_feature_calculation(
     for t in trades:
         trades_bytes += t.to_bytes()
 
-    test_dir_trades = os.path.join(resource_path, "trades/XXBTZUSD")
-    os.makedirs(test_dir_trades, exist_ok=True)
-    test_path = os.path.join(test_dir_trades, "11_22_2024.bin")
+    test_dir_snapshots = resource_path / "trades" / "XXBTZUSD"
+    os.makedirs(test_dir_snapshots, exist_ok=True)
+    test_path = test_dir_snapshots / "11_22_2024.bin"
+
     with open(test_path, "wb") as f:
         f.write(
             compress(trades_bytes, level_or_option={CParameter.compressionLevel: 10})
         )
 
-    trade_resource = os.path.join(resource_path, "trades")
-    snapshot_resource = os.path.join(resource_path, "snapshots")
-    result = client.calculate_features(feature_gen, trade_resource, snapshot_resource)
+    result = client.calculate_features(feature_gen)
     assert result["a"] == [7.0, 7.0, 7.0]
     assert result["b"] == [7.0, 7.0, 7.0]
     assert result["c"] == [7.0, 7.0, 7.0]
 
 
-# Test feature evaluation
 def test_feature_evaluation(client: Evaluator) -> None:
     features = {"a": [1.0, 2.0, 3.0], "b": [2.0, 4.0, 6.0], "c": [3.0, 6.0, 9.0]}
 
