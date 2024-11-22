@@ -1,29 +1,44 @@
-import socket
 import getpass
-from pysrc.util.types import Server
+import socket
+
 from pysrc.util.exceptions import DIE
+from pysrc.util.types import Server
 
 SERVER_USERNAME_TO_SLACK_NAME: dict[str, str] = {
     "echavemann": "Ethan Havemann",
+    "ahuang9999": "Alex Huang",
     "andrlime": "Andrew Li",
     "avillasenor": "Aidan Villasenor",
     "bhu": "Blake Hu",
+    "chengian": "Ian Cheng",
     "dsl": "Daniel Lee",
     "efang": "Eddie Fang",
-    "frankling": "Franklin Zhao",
+    "franklin": "Franklin Zhao",
+    "fzhang": "Frank Zhang",
     "gwang": "Gavin Wang",
+    "hguan": "Harry Guan",
+    "jasonzhxn": "Jason Zhan",
     "jay": "Jay Park",
     "JCJR": "Jerry Cao",
     "jenny": "Jenny Zhou",
     "jerry": "Jerry Han",
     "john": "John Hileman",
+    "maxbreslin": "Max Breslin",
     "mglass": "Max Glass",
     "minnce": "Chris Minn",
     "miya": "Miya Liu",
     "mmaiti": "Milind Maiti",
+    "mossbarger": "Luke Mossbarger",
+    "myang": "Kevin Y",
     "nikola": "Nino",
+    "nolenca": "Clayton Nolen",
+    "nwangjs": "Nathan Wang",
     "rewong": "Ryan Wong",
+    "rmohan": "Romir Mohan",
     "steev": "Steve Ewald",
+    "wbrittian": "Will Brittian",
+    "wu": "Nathan Wu",
+    "xyliu": "Yang Liu",
 }
 
 

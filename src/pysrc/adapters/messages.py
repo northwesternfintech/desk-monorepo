@@ -1,6 +1,8 @@
-from pysrc.util.types import Market, OrderSide
-import numpy as np
 import struct
+
+import numpy as np
+
+from pysrc.util.types import Market, OrderSide
 
 
 class SnapshotMessage:
@@ -97,3 +99,28 @@ class TradeMessage:
         self.price = price
         self.side = side
         self.market = market
+
+    def to_bytes(self) -> bytes:
+        return struct.pack(
+            "=QffB",
+            self.time,
+            self.price,
+            self.quantity,
+            self.side.value,
+        )
+
+    @staticmethod
+    def from_bytes(b: bytes, feedcode: str, market: Market) -> "TradeMessage":
+        if len(b) != 17:
+            raise ValueError("Can't create TradeMessage from != 17 bytes")
+        time, price, quantity, side_val = struct.unpack("=QffB", b)
+
+        return TradeMessage(
+            time=time,
+            feedcode=feedcode,
+            n_trades=1,
+            price=price,
+            quantity=quantity,
+            side=OrderSide(side_val),
+            market=market,
+        )

@@ -1,19 +1,21 @@
+from typing import Any, Mapping, Optional
+
 import requests
-from pysrc.util.enum_conversions import enum_to_string, string_to_enum
+
 from pysrc.adapters.kraken.asset_mappings import asset_to_kraken, kraken_to_asset
 from pysrc.adapters.kraken.spot.containers import (
-    SystemStatus,
     AssetInfo,
     AssetPairInfo,
-    OHLCData,
     AssetStatus,
+    OHLCData,
     OHLCTick,
     SpreadMessage,
+    SystemStatus,
     TradeableAssetPairParam,
 )
-from typing import Optional, Dict, Mapping, Any
+from pysrc.adapters.messages import SnapshotMessage, TradeMessage
+from pysrc.util.enum_conversions import enum_to_string, string_to_enum
 from pysrc.util.types import Asset, Market, OrderSide
-from pysrc.adapters.messages import TradeMessage, SnapshotMessage
 
 KRAKEN_API_LIVE_BASE_URL = "https://api.kraken.com/0/public/"
 
@@ -24,13 +26,13 @@ class KrakenClient:
 
     def _get(
         self, endpoint: str, params: Optional[Mapping[str, Any]] = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         url = f"{self._base_url}{endpoint}"
 
         try:
             response = requests.get(url, params=params)
             response.raise_for_status()
-            res: Dict[str, Any] = response.json()
+            res: dict[str, Any] = response.json()
 
             if res["error"]:
                 raise ValueError(f"API Error: {res['error']}")
@@ -64,7 +66,7 @@ class KrakenClient:
         self,
         assets: list[Asset],
         info: TradeableAssetPairParam = TradeableAssetPairParam.INFO,
-    ) -> Dict[str, AssetPairInfo]:
+    ) -> dict[str, AssetPairInfo]:
         pair_param = ",".join([f"{enum_to_string(asset)}/USDT" for asset in assets])
 
         route = "AssetPairs"

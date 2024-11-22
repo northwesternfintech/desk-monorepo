@@ -1,4 +1,5 @@
 from abc import ABC
+
 from pysrc.exec.action import Action
 from pysrc.util.types import Asset
 

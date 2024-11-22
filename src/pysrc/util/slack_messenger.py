@@ -1,9 +1,11 @@
+import os
 from typing import Optional
+
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+
 from pysrc.util.slack_utils import get_slack_id_by_name, get_user_if_valid
 from pysrc.util.system import get_current_user_slack_name
-import os
 
 SPECIAL_MENTIONS = ("here", "everyone", "channel")
 
@@ -15,7 +17,7 @@ def _get_client() -> WebClient:
     if _client is None:
         desk_bot_token = os.getenv("DESK_BOT_TOKEN")
         if not desk_bot_token:
-            raise EnvironmentError(
+            raise OSError(
                 "The environment variable 'DESK_BOT_TOKEN' is not set. Please set it before running the script."
             )
         _client = WebClient(token=desk_bot_token)

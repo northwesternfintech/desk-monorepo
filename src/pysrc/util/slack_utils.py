@@ -1,6 +1,7 @@
-from slack_sdk.errors import SlackApiError
 from typing import Optional
+
 from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 
 _users: Optional[list[dict]] = None
 
