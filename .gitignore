@@ -7,4 +7,4 @@ build
 CMakeUserPresets.json
 cmake-build-debug
 CMakeFiles
-*.log
+logs/
