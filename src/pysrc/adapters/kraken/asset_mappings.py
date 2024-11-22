@@ -27,7 +27,7 @@ _kraken_to_asset = {
         "PF_AVAXUSD": Asset.AVAX,
         "PF_SHIBUSD": Asset.SHIB,
         "PF_DOTUSD": Asset.DOT,
-    }
+    },
 }
 _asset_to_kraken = {
     Market.KRAKEN_SPOT: {
@@ -55,7 +55,7 @@ _asset_to_kraken = {
         Asset.AVAX: "PF_AVAXUSD",
         Asset.SHIB: "PF_SHIBUSD",
         Asset.DOT: "PF_DOTUSD",
-    }
+    },
 }
 
 
@@ -64,7 +64,7 @@ def kraken_to_market(kraken_name: str) -> Market:
         return Market.KRAKEN_SPOT
     elif kraken_name in _kraken_to_asset[Market.KRAKEN_USD_FUTURE]:
         return Market.KRAKEN_USD_FUTURE
-    
+
     raise ValueError("Invalid kraken asset label — cannot find market")
 
 

@@ -4,7 +4,11 @@ from typing import Generator, Optional
 
 from pyzstd import CParameter, ZstdCompressor, ZstdFile
 
-from pysrc.adapters.kraken.asset_mappings import asset_to_kraken, kraken_to_asset, kraken_to_market
+from pysrc.adapters.kraken.asset_mappings import (
+    asset_to_kraken,
+    kraken_to_asset,
+    kraken_to_market,
+)
 from pysrc.adapters.messages import TradeMessage
 from pysrc.data_handlers.kraken.historical.base_data_handler import BaseDataHandler
 from pysrc.util.historical_data_utils import check_historical_data_filepath
