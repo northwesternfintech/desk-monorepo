@@ -1,10 +1,12 @@
 import logging
 import logging.config
 import os
+from datetime import datetime
 
-log_dir = "src/pysrc/logger/logs/"
+log_dir = "logs/"
 os.makedirs(log_dir, exist_ok=True)
 
+log_file = os.path.join(log_dir, f"project_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
 
 def setup_logging() -> None:
     logging.config.dictConfig(
@@ -24,7 +26,7 @@ def setup_logging() -> None:
                 },
                 "file": {
                     "class": "logging.FileHandler",
-                    "filename": "src/pysrc/logger/logs/project.log",
+                    "filename": log_file,  
                     "formatter": "standard",
                     "level": "DEBUG",
                 },
