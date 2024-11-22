@@ -1,8 +1,11 @@
 import getpass
+import logging
 import socket
 
 from pysrc.util.exceptions import DIE
 from pysrc.util.types import Server
+
+_logger = logging.getLogger(__name__)
 
 SERVER_USERNAME_TO_SLACK_NAME: dict[str, str] = {
     "echavemann": "Ethan Havemann",
@@ -53,7 +56,7 @@ def get_current_user() -> str:
 
 def get_current_user_slack_name() -> str:
     current_user: str = get_current_user()
-    print(current_user)
+    _logger.debug(f"Current user: {current_user}")
     slack_name = SERVER_USERNAME_TO_SLACK_NAME.get(current_user)
     if slack_name is None:
         DIE(
