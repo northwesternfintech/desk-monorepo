@@ -1,5 +1,9 @@
 import logging
 import logging.config
+import os
+
+log_dir = "./logs/"
+os.makedirs(log_dir, exist_ok=True)
 
 
 def setup_logging() -> None:
