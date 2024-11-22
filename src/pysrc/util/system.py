@@ -56,7 +56,7 @@ def get_current_user() -> str:
 
 def get_current_user_slack_name() -> str:
     current_user: str = get_current_user()
-    logging.debug(f"Current user: {current_user}")
+    _logger.debug(f"Current user: {current_user}")
     slack_name = SERVER_USERNAME_TO_SLACK_NAME.get(current_user)
     if slack_name is None:
         DIE(
