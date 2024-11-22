@@ -1,24 +1,17 @@
 from pathlib import Path
 
+from pysrc.adapters.kraken.asset_mappings import kraken_to_market
+
 
 def check_historical_data_filepath(file_path: Path, is_trade_data: bool) -> bool:
-    kraken_feedcodes = [
-        "XXBTZUSD",
-        "XETHZUSD",
-        "XWIFZUSD",
-        "XXRPZUSD",
-        "XSOLZUSD",
-        "XDOGEZUSD",
-        "XTRXZUSD",
-        "XADAZUSD",
-        "XAVAXZUSD",
-        "XSHIBZUSD",
-        "XDOTZUSD",
-    ]
     if file_path.suffix != ".bin":
         return False
-    if file_path.parent.name not in kraken_feedcodes:
+    
+    try:
+        kraken_to_market(file_path.parent.name)
+    except Exception as _:
         return False
+        
     if is_trade_data:
         if file_path.parent.parent.name != "trades":
             return False

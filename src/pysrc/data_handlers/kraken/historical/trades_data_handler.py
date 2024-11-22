@@ -4,7 +4,7 @@ from typing import Generator, Optional
 
 from pyzstd import CParameter, ZstdCompressor, ZstdFile
 
-from pysrc.adapters.kraken.asset_mappings import asset_to_kraken, kraken_to_asset
+from pysrc.adapters.kraken.asset_mappings import asset_to_kraken, kraken_to_asset, kraken_to_market
 from pysrc.adapters.messages import TradeMessage
 from pysrc.data_handlers.kraken.historical.base_data_handler import BaseDataHandler
 from pysrc.util.historical_data_utils import check_historical_data_filepath
@@ -29,9 +29,10 @@ class TradesDataHandler(BaseDataHandler):
             raise ValueError(f"Invalid input trades file path: {input_path}")
         trades = []
         asset = kraken_to_asset(input_path.parent.name)
+        market = kraken_to_market(input_path.parent.name)
         with ZstdFile(input_path, "rb") as f:
             while True:
-                trade = self._trade_message_from_stream(f, asset)
+                trade = self._trade_message_from_stream(f, asset, market)
                 if not trade:
                     break
                 trades.append(trade)
@@ -49,7 +50,7 @@ class TradesDataHandler(BaseDataHandler):
             f.write(compressor.flush())
 
     def _trade_message_from_stream(
-        self, file: ZstdFile, asset: Asset
+        self, file: ZstdFile, asset: Asset, market: Market
     ) -> Optional[TradeMessage]:
         raw_data = file.read(self._record_size)
         if not raw_data:
@@ -61,12 +62,12 @@ class TradesDataHandler(BaseDataHandler):
 
         return TradeMessage(
             time,
-            asset_to_kraken(asset),
+            asset_to_kraken(asset, market),
             1,
             price,
             quantity,
             OrderSide(side_val),
-            Market.KRAKEN_SPOT,
+            market,
         )
 
     def stream_read(self, input_path: Path) -> Generator[TradeMessage, None, None]:
@@ -75,9 +76,10 @@ class TradesDataHandler(BaseDataHandler):
         if not check_historical_data_filepath(input_path, True):
             raise ValueError(f"Invalid input trades file path: {input_path}")
         asset = kraken_to_asset(input_path.parent.name)
+        market = kraken_to_market(input_path.parent.name)
         with ZstdFile(input_path, "rb") as f:
             while True:
-                trade = self._trade_message_from_stream(f, asset)
+                trade = self._trade_message_from_stream(f, asset, market)
                 if not trade:
                     break
                 yield trade
