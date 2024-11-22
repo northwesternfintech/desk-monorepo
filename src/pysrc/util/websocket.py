@@ -2,10 +2,12 @@ import asyncio
 import json
 from abc import ABC, abstractmethod
 from typing import Optional
+import logging
 
 import websockets
 from websockets.asyncio.client import ClientConnection
 
+_logger = logging.getLogger(__name__)
 
 class WebSocketClient(ABC):
     def __init__(
@@ -25,38 +27,38 @@ class WebSocketClient(ABC):
         retries = 0
         while self.max_retries is None or retries < self.max_retries:
             try:
-                print(
+                _logger.info(
                     f"Connecting to WebSocket at {self.base_url} (Attempt {retries + 1})..."
                 )
                 self.ws = await asyncio.wait_for(
                     websockets.connect(self.base_url), timeout=10
                 )
-                print("Connected to WebSocket.")
+                _logger.info("Connected to WebSocket.")
 
                 await self.on_connect()
 
                 await self._listen_for_messages()
                 return
             except asyncio.TimeoutError:
-                print("Connection attempt timed out.")
+                _logger.warning("Connection attempt timed out.")
             except websockets.ConnectionClosed as e:
-                print(f"WebSocket connection closed: {e}")
+                _logger.warning(f"WebSocket connection closed: {e}")
             except Exception as e:
-                print(f"Unexpected error: {e}")
+                _logger.warning(f"Unexpected error: {e}")
             finally:
                 await self.on_disconnect()
 
             retries += 1
             if self.max_retries is not None and retries >= self.max_retries:
-                print("Max retries reached. Shutting websocket down.")
+                _logger.warning("Max retries reached. Shutting websocket down.")
                 break
-            print(f"Retrying in {self.retry_delay} seconds...")
+            _logger.debug(f"Retrying in {self.retry_delay} seconds...")
             await asyncio.sleep(self.retry_delay)
 
     async def _listen_for_messages(self) -> None:
         try:
             while True:
-                print("Listening for messages from WebSocket...")
+                _logger.info("Listening for messages from WebSocket...")
                 if self.ws is None:
                     raise RuntimeError("WebSocket connection is not established.")
                 async for message in self.ws:
@@ -64,12 +66,12 @@ class WebSocketClient(ABC):
                         data = json.loads(message)
                         await self.on_message(data)
                     except json.JSONDecodeError:
-                        print("Failed to parse message")
+                        _logger.warning("Failed to parse message")
                     await asyncio.sleep(0.1)
         except websockets.ConnectionClosed as e:
-            print(f"WebSocket connection closed during listening: {e}")
+            _logger.warning(f"WebSocket connection closed during listening: {e}")
         except Exception as e:
-            print(f"Unexpected error while listening: {e}")
+            _logger.warning(f"Unexpected error while listening: {e}")
 
     @abstractmethod
     async def on_connect(self) -> None:

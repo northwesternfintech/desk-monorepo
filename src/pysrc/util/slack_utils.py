@@ -1,9 +1,11 @@
 from typing import Optional
+import logging
 
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 _users: Optional[list[dict]] = None
+_logger = logging.getLogger(__name__)
 
 
 def _get_users(client: WebClient) -> Optional[list[dict]]:
@@ -16,7 +18,7 @@ def _get_users(client: WebClient) -> Optional[list[dict]]:
 def get_user_if_valid(client: WebClient, name: str) -> Optional[dict]:
     users = _get_users(client)
     if not users:
-        print(
+        _logger.warning(
             "Could not retreieve list of slack users (is the WebClient working properly?)"
         )
         return None
@@ -35,7 +37,7 @@ def get_slack_id_by_name(
             user = get_user_if_valid(client, name)
             if user:
                 return str(user["id"])
-            print(f"No user found with the name: {name}")
+            _logger.warning(f"No user found with the name: {name}")
 
         elif search_type == "channel":
             response = client.conversations_list(types="public_channel,private_channel")
@@ -44,13 +46,13 @@ def get_slack_id_by_name(
             for channel in channels:
                 if channel.get("name") == name:
                     return str(channel["id"])
-            print(f"No channel found with the name: {name}")
+            _logger.warning(f"No channel found with the name: {name}")
 
         else:
-            print("Invalid search type. Please use 'user' or 'channel'.")
+            _logger.warning("Invalid search type. Please use 'user' or 'channel'.")
 
         return None
 
     except SlackApiError as e:
-        print(f"Error retrieving data: {e.response['error']}")
+        _logger.warning(f"Error retrieving data: {e.response['error']}")
         return None

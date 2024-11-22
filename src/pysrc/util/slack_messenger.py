@@ -1,5 +1,6 @@
 import os
 from typing import Optional
+import logging
 
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -10,7 +11,7 @@ from pysrc.util.system import get_current_user_slack_name
 SPECIAL_MENTIONS = ("here", "everyone", "channel")
 
 _client: Optional[WebClient] = None
-
+_logger = logging.getLogger(__name__)
 
 def _get_client() -> WebClient:
     global _client
@@ -52,9 +53,9 @@ def send_slack_message(channel: str, message: str, mentions: list[str] = []) -> 
     result_message += message
     try:
         response = client.chat_postMessage(channel=channel, text=result_message)
-        print(f"Message sent to {channel}: {response['ts']}")
+        _logger.debug(f"Message sent to {channel}: {response['ts']}")
     except SlackApiError as e:
-        print(f"Error sending message: {e.response['error']}")
+        _logger.warning(f"Error sending message: {e.response['error']}")
 
 
 def send_slack_message_to_current_server_user(channel: str, message: str) -> None:
