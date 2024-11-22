@@ -1,4 +1,3 @@
-from typing import Optional
 from pysrc.util.types import Asset, Market
 
 _kraken_to_asset = {
