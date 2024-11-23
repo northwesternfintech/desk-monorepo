@@ -4,10 +4,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from pysrc.adapters.messages import SnapshotMessage
 from pysrc.data_handlers.kraken.historical.snapshots_data_handler import (
     SnapshotsDataHandler,
 )
-from pysrc.data_loaders.raw_snapshots_data_loader import RawSnapshotsDataLoader
+from pysrc.data_loaders.tick_snapshots_data_loader import TickSnapshotsDataLoader
 from pysrc.util.types import Asset, Market
 
 resource_path = Path(__file__).parent / "resources"
@@ -15,7 +16,7 @@ resource_path = Path(__file__).parent / "resources"
 
 def test_initialization_error() -> None:
     with pytest.raises(ValueError) as msg:
-        RawSnapshotsDataLoader(
+        TickSnapshotsDataLoader(
             resource_path=resource_path,
             asset=Asset.ADA,
             market=Market.KRAKEN_SPOT,
@@ -28,7 +29,7 @@ def test_initialization_error() -> None:
     )
 
     with pytest.raises(ValueError) as msg:
-        RawSnapshotsDataLoader(
+        TickSnapshotsDataLoader(
             resource_path=resource_path / "lol",
             asset=Asset.ADA,
             market=Market.KRAKEN_SPOT,
@@ -40,7 +41,7 @@ def test_initialization_error() -> None:
     ) and "doesn't exist" in str(msg.value)
 
     with pytest.raises(ValueError) as msg:
-        RawSnapshotsDataLoader(
+        TickSnapshotsDataLoader(
             resource_path=resource_path,
             asset=Asset.ADA,
             market=Market.KRAKEN_SPOT,
@@ -51,7 +52,7 @@ def test_initialization_error() -> None:
 
 
 def test_get_data_error() -> None:
-    loader = RawSnapshotsDataLoader(
+    loader = TickSnapshotsDataLoader(
         resource_path=resource_path,
         asset=Asset.ADA,
         market=Market.KRAKEN_SPOT,
@@ -76,7 +77,7 @@ def test_get_data_error() -> None:
 
 def test_get_data_success() -> None:
     handler = SnapshotsDataHandler()
-    loader = RawSnapshotsDataLoader(
+    loader = TickSnapshotsDataLoader(
         resource_path=resource_path,
         asset=Asset.ADA,
         market=Market.KRAKEN_SPOT,
@@ -101,24 +102,48 @@ def test_get_data_success() -> None:
 
 
 def test_next_success() -> None:
+    start = date(year=2024, month=6, day=25)
     handler = SnapshotsDataHandler()
-    loader = RawSnapshotsDataLoader(
+    loader = TickSnapshotsDataLoader(
         resource_path=resource_path,
         asset=Asset.ADA,
         market=Market.KRAKEN_SPOT,
-        since=date(year=2024, month=6, day=25),
+        since=start,
         until=None,
     )
 
     target_path = resource_path / "snapshots" / "XADAZUSD" / "test.bin"
     targets = handler.read(target_path)
 
-    for i in range(len(targets)):
+    idx = 0
+    count = 0
+    cur_epoch = loader._date_to_epoch(start)
+    if targets[0].time == cur_epoch:
+        cur_snapshot = targets[0]
+    else:
+        cur_snapshot = SnapshotMessage(
+            time=cur_epoch,
+            feedcode="XADAZUSD",
+            bids=[],
+            asks=[],
+            market=Market.KRAKEN_SPOT,
+        )
+
+    while True:
         snapshot = loader.next()
-        assert snapshot is not None
-        assert snapshot.time == targets[i].time
-        assert snapshot.bids == targets[i].bids
-        assert snapshot.asks == targets[i].asks
-        assert snapshot.feedcode == targets[i].feedcode
-        assert snapshot.market == targets[i].market
-    assert loader.next() is None
+        if snapshot is None:
+            break
+        while (idx + 1 < len(targets)) and (cur_epoch == targets[idx + 1].time):
+            idx += 1
+            cur_snapshot = targets[idx]
+
+        assert snapshot.time == cur_snapshot.time
+        assert snapshot.bids == cur_snapshot.bids
+        assert snapshot.asks == cur_snapshot.asks
+        assert snapshot.feedcode == cur_snapshot.feedcode
+        assert snapshot.market == cur_snapshot.market
+
+        cur_epoch += 1
+        count += 1
+
+    assert count == 60 * 60 * 24 * 6

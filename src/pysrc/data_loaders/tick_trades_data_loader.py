@@ -4,11 +4,9 @@ from typing import Optional
 
 from pysrc.adapters.kraken.asset_mappings import asset_to_kraken
 from pysrc.adapters.messages import TradeMessage
-from pysrc.data_loaders.base_data_loader import BaseDataLoader
 from pysrc.data_handlers.kraken.historical.trades_data_handler import TradesDataHandler
+from pysrc.data_loaders.base_data_loader import BaseDataLoader
 from pysrc.util.types import Asset, Market
-
-COUNTDOWN = 86_400
 
 
 class TickTradesDataLoader(BaseDataLoader):
@@ -53,7 +51,7 @@ class TickTradesDataLoader(BaseDataLoader):
         self._cur_generator = self._handler.stream_read(self._cur_path)
 
         self._cur_epoch = self._date_to_epoch(self._cur_date)
-        self._countdown = COUNTDOWN
+        self._countdown = 86_400
         self._cur_trades: list[TradeMessage] = []
         self._next_trade: Optional[TradeMessage] = None
 
@@ -99,7 +97,7 @@ class TickTradesDataLoader(BaseDataLoader):
             if not self._cur_path.exists():
                 return None
             self._cur_generator = self._handler.stream_read(self._cur_path)
-            self._countdown = COUNTDOWN
+            self._countdown = 86_400
 
         if self._next_trade is not None:
             if self._next_trade.time < self._cur_epoch:

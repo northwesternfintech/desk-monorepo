@@ -4,8 +4,8 @@ from typing import Optional
 
 from pysrc.adapters.kraken.asset_mappings import asset_to_kraken
 from pysrc.adapters.messages import TradeMessage
-from pysrc.data_loaders.base_data_loader import BaseDataLoader
 from pysrc.data_handlers.kraken.historical.trades_data_handler import TradesDataHandler
+from pysrc.data_loaders.base_data_loader import BaseDataLoader
 from pysrc.util.types import Asset, Market
 
 
