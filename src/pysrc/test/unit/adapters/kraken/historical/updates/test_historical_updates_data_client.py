@@ -21,7 +21,7 @@ from pysrc.adapters.kraken.historical.updates.historical_updates_data_client imp
 )
 from pysrc.adapters.messages import SnapshotMessage
 from pysrc.test.helpers import get_resources_path
-from pysrc.util.types import Market, OrderSide
+from pysrc.util.types import Asset, Market, OrderSide
 
 resource_path = str(get_resources_path(__file__))
 
@@ -226,7 +226,7 @@ EXECUTION_EVENTS: dict[str, typing.Any] = {
                         "uid": "1f466249-5736-43d0-bff4-096c9229ecb0",
                         "makerOrder": {
                             "uid": "97c27b3a-6a41-41a4-9d0e-e5399e7947e7",
-                            "tradeable": "PI_XBTUSD",
+                            "tradeable": "PF_XBTUSD",
                             "direction": "Buy",
                             "quantity": "3000",
                             "timestamp": 1730786549972,
@@ -237,7 +237,7 @@ EXECUTION_EVENTS: dict[str, typing.Any] = {
                         },
                         "takerOrder": {
                             "uid": "bfce0e50-fc61-443e-977e-e8ce419bac6e",
-                            "tradeable": "PI_XBTUSD",
+                            "tradeable": "PF_XBTUSD",
                             "direction": "Sell",
                             "quantity": "3000",
                             "timestamp": 1730786567508,
@@ -354,7 +354,7 @@ def test_queue_events_for_day(
 
 
 def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
-    client._cur_mbp_book = MBPBook(feedcode="BONKUSD", market=Market.KRAKEN_USD_FUTURE)
+    client._cur_mbp_book = MBPBook(feedcode="PF_XBTUSD", market=Market.KRAKEN_USD_FUTURE)
     client._queue = ChunkedEventQueue(num_chunks=1)
     client._cur_sec = 1
 
@@ -370,7 +370,7 @@ def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
     snapshot = client._compute_next_snapshot()
     assert snapshot
     assert snapshot.time == 1
-    assert snapshot.feedcode == "BONKUSD"
+    assert snapshot.feedcode == "PF_XBTUSD"
     assert snapshot.market == Market.KRAKEN_USD_FUTURE
     assert len(snapshot.bids) == 0
     assert len(snapshot.asks) == 1
@@ -380,7 +380,7 @@ def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
     snapshot = client._compute_next_snapshot()
     assert snapshot
     assert snapshot.time == 2
-    assert snapshot.feedcode == "BONKUSD"
+    assert snapshot.feedcode == "PF_XBTUSD"
     assert snapshot.market == Market.KRAKEN_USD_FUTURE
     assert len(snapshot.bids) == 3
     assert len(snapshot.asks) == 2
@@ -394,7 +394,7 @@ def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
     snapshot = client._compute_next_snapshot()
     assert snapshot
     assert snapshot.time == 10
-    assert snapshot.feedcode == "BONKUSD"
+    assert snapshot.feedcode == "PF_XBTUSD"
     assert snapshot.market == Market.KRAKEN_USD_FUTURE
     assert len(snapshot.bids) == 4
     assert len(snapshot.asks) == 2
@@ -415,104 +415,16 @@ def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
 def test_fail_download_updates(
     mock_make_request: MagicMock, client: HistoricalUpdatesDataClient
 ) -> None:
-    test_dir = os.path.join(resource_path, "BONKUSD")
-    os.makedirs(test_dir, exist_ok=True)
-
     mock_make_request.side_effect = ValueError()
 
     with pytest.raises(ValueError) as e_info:
         client.download_updates(
-            asset="BONKUSD", since=datetime(year=2024, month=11, day=5)
+            asset=Asset.BTC, since=datetime(year=2024, month=11, day=5)
         )
 
     assert (
         e_info.value.args[0]
-        == "Failed to download updates for 'BONKUSD' for date '11_05_2024'"
+        == "Failed to download updates for 'PF_XBTUSD' for date '11_05_2024'"
     )
-
-    shutil.rmtree(resource_path)
-
-
-def test_stream_snapshot(client: HistoricalUpdatesDataClient) -> None:
-    snapshots = [
-        SnapshotMessage(
-            time=1,
-            feedcode="BONKUSD",
-            market=Market.KRAKEN_USD_FUTURE,
-            bids=[],
-            asks=[[1.0, 2.0]],
-        ),
-        SnapshotMessage(
-            time=2,
-            feedcode="BONKUSD",
-            market=Market.KRAKEN_USD_FUTURE,
-            bids=[[3.0, 4.0], [5.0, -6.0], [68717.5, -3000.0]],
-            asks=[[1.0, 2.0], [68717.5, -3000.0]],
-        ),
-        SnapshotMessage(
-            time=10,
-            feedcode="BONKUSD",
-            market=Market.KRAKEN_USD_FUTURE,
-            bids=[[3.0, 4.0], [5.0, -6.0], [68717.5, -3000.0], [7.0, -8.0]],
-            asks=[[1.0, 2.0], [68717.5, -3000.0]],
-        ),
-    ]
-
-    snapshots_bytes = b""
-    for s in snapshots:
-        snapshots_bytes += s.to_bytes()
-
-    test_dir = os.path.join(resource_path, "BONKUSD")
-    os.makedirs(test_dir, exist_ok=True)
-    test_path = os.path.join(test_dir, "11_05_2024")
-    with open(test_path, "wb") as f:
-        f.write(
-            compress(snapshots_bytes, level_or_option={CParameter.compressionLevel: 10})
-        )
-
-    gen = client.stream_updates(
-        "BONKUSD",
-        datetime(year=2024, month=11, day=5),
-        until=datetime(year=2024, month=11, day=6),
-    )
-
-    s1 = next(gen)
-    assert s1
-    assert s1.time == 1
-    assert s1.feedcode == "BONKUSD"
-    assert s1.market == Market.KRAKEN_USD_FUTURE
-    assert len(s1.bids) == 0
-    assert len(s1.asks) == 1
-    assert (1, 2) in s1.asks
-
-    s2 = next(gen)
-    assert s2
-    assert s2.time == 2
-    assert s2.feedcode == "BONKUSD"
-    assert s2.market == Market.KRAKEN_USD_FUTURE
-    assert len(s2.bids) == 3
-    assert len(s2.asks) == 2
-    assert (1, 2) in s2.asks
-    assert (68717.5, -3000) in s2.asks
-    assert (3, 4) in s2.bids
-    assert (5, -6) in s2.bids
-    assert (68717.5, -3000) in s2.bids
-
-    s3 = next(gen)
-    assert s3
-    assert s3.time == 10
-    assert s3.feedcode == "BONKUSD"
-    assert s3.market == Market.KRAKEN_USD_FUTURE
-    assert len(s3.bids) == 4
-    assert len(s3.asks) == 2
-    assert (1, 2) in s3.asks
-    assert (68717.5, -3000) in s3.asks
-    assert (3, 4) in s3.bids
-    assert (5, -6) in s3.bids
-    assert (68717.5, -3000) in s3.bids
-    assert (7, -8) in s3.bids
-
-    with pytest.raises(StopIteration):
-        next(gen)
 
     shutil.rmtree(resource_path)

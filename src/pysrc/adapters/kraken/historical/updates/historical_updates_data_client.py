@@ -8,6 +8,7 @@ from typing import Any, Generator, Optional
 
 import numpy as np
 import requests
+from pysrc.adapters.kraken.asset_mappings import asset_to_kraken
 from pysrc.data_handlers.kraken.historical.snapshots_data_handler import SnapshotsDataHandler
 from pyzstd import CParameter, EndlessZstdDecompressor, ZstdCompressor
 
@@ -24,7 +25,7 @@ from pysrc.adapters.kraken.historical.updates.utils import (
     str_to_order_side,
 )
 from pysrc.adapters.messages import SnapshotMessage
-from pysrc.util.types import Market, OrderSide
+from pysrc.util.types import Asset, Market, OrderSide
 
 
 class HistoricalUpdatesDataClient:
@@ -229,25 +230,19 @@ class HistoricalUpdatesDataClient:
 
     def _compute_updates_for_day(
         self,
-        asset: str,
+        kraken_asset: str,
         day: datetime,
     ) -> str:
-        snapshot_dir = Path(self._resource_path) / asset / "snapshots"
-        asset_path = os.path.join(self._resource_path, asset)
-        if not os.path.exists(asset_path):
-            os.mkdir(asset_path)
-
-        file_path = os.path.join(self._resource_path, asset, day.strftime("%m_%d_%Y"))
-        compressor = ZstdCompressor(level_or_option=self._zstd_options)
-
-        f = open(file_path, "wb")
+        snapshot_path = Path(self._resource_path) / "snapshots" / kraken_asset
+        if not os.path.exists(snapshot_path):
+            os.makedirs(snapshot_path)
 
         threads = []
         for i in range(self._NUM_CHUNKS):
             order_thread = Thread(
                 target=self._queue_events_for_chunk,
                 args=(
-                    asset,
+                    kraken_asset,
                     day + timedelta(minutes=30 * i),
                     day + timedelta(minutes=30 * (i + 1)),
                     i,
@@ -258,7 +253,7 @@ class HistoricalUpdatesDataClient:
             exec_thread = Thread(
                 target=self._queue_events_for_chunk,
                 args=(
-                    asset,
+                    kraken_asset,
                     day + timedelta(minutes=30 * i),
                     day + timedelta(minutes=30 * (i + 1)),
                     i,
@@ -272,13 +267,14 @@ class HistoricalUpdatesDataClient:
         for thread in threads:
             thread.start()
 
+        snapshots = []
         snapshot = self._compute_next_snapshot()
         while snapshot:
-            f.write(compressor.compress(snapshot.to_bytes()))
+            snapshots.append(snapshot)
             snapshot = self._compute_next_snapshot()
 
-        f.write(compressor.flush())
-        f.close()
+        file_path = snapshot_path / f"{day.strftime('%m_%d_%Y')}.bin"
+        self._snapshot_handler.write(file_path, snapshots)
 
         for thread in threads:
             thread.join()
@@ -287,7 +283,7 @@ class HistoricalUpdatesDataClient:
 
     def download_updates(
         self,
-        asset: str,
+        asset: Asset,
         since: datetime,
         until: Optional[datetime] = None,
         max_retry_count: Optional[int] = 3,
@@ -298,12 +294,14 @@ class HistoricalUpdatesDataClient:
         if not until:
             until = datetime.today()
 
+        kraken_asset = asset_to_kraken(asset, Market.KRAKEN_USD_FUTURE)
+
         self._last_saved_mbp_book = MBPBook(
-            feedcode=asset, market=Market.KRAKEN_USD_FUTURE
+            feedcode=kraken_asset, market=Market.KRAKEN_USD_FUTURE
         )
         self._last_saved_sec = int(since.timestamp())
 
-        self._cur_mbp_book = MBPBook(feedcode=asset, market=Market.KRAKEN_USD_FUTURE)
+        self._cur_mbp_book = MBPBook(feedcode=kraken_asset, market=Market.KRAKEN_USD_FUTURE)
         self._cur_sec = int(since.timestamp())
 
         for i in range((until - since).days):
@@ -312,7 +310,7 @@ class HistoricalUpdatesDataClient:
             cur = since + timedelta(days=i)
             for _ in range(max_retry_count):
                 self._queue = ChunkedEventQueue(num_chunks=self._NUM_CHUNKS)
-                update_file_path = self._compute_updates_for_day(asset, cur)
+                update_file_path = self._compute_updates_for_day(kraken_asset, cur)
 
                 if self._queue.failed():
                     succeeded = False
@@ -330,5 +328,5 @@ class HistoricalUpdatesDataClient:
             if not succeeded:
                 failed_day_str = cur.strftime("%m_%d_%Y")
                 raise ValueError(
-                    f"Failed to download updates for '{asset}' for date '{failed_day_str}'"
+                    f"Failed to download updates for '{kraken_asset}' for date '{failed_day_str}'"
                 )
