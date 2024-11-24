@@ -124,3 +124,8 @@ class TradeMessage:
             side=OrderSide(side_val),
             market=market,
         )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TradeMessage):
+            return NotImplemented
+        return vars(self) == vars(other)
