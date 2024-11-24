@@ -101,7 +101,9 @@ class HistoricalUpdatesDataClient:
         before: Optional[int] = None,
         continuation_token: Optional[str] = None,
     ) -> OrderEventResponse:
-        route = f"https://futures.kraken.com/api/history/v3/market/{kraken_asset}/orders"
+        route = (
+            f"https://futures.kraken.com/api/history/v3/market/{kraken_asset}/orders"
+        )
 
         params = {
             "sort": "asc",
