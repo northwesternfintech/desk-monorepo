@@ -3,6 +3,8 @@ import logging
 import time
 from typing import Any, Optional, override
 
+from sortedcontainers import SortedDict  # type: ignore
+
 from pysrc.adapters.kraken.asset_mappings import (
     asset_to_kraken,
     kraken_to_asset,
@@ -27,7 +29,6 @@ class KrakenFutureWebsocketClient(WebSocketClient):
         super().__init__(self.BASE_URL, retry_delay, max_retries)
         self.subscribed_assets: list[Asset] = subscribed_assets
         self.trade_messages: list[TradeMessage] = []
-        # only to be updated immediately before passing to client
         self.snapshot_messages: dict[Asset, SnapshotMessage] = {
             asset: SnapshotMessage(
                 -1,
@@ -39,11 +40,11 @@ class KrakenFutureWebsocketClient(WebSocketClient):
             for asset in subscribed_assets
         }
         self.subscription_confirmations: dict[str, bool] = {}
-        self.bids: dict[Asset, dict[float, float]] = {
-            asset: {} for asset in self.subscribed_assets
+        self.bids: dict[Asset, SortedDict[float, float]] = {
+            asset: SortedDict(lambda price: -price) for asset in self.subscribed_assets
         }
-        self.asks: dict[Asset, dict[float, float]] = {
-            asset: {} for asset in self.subscribed_assets
+        self.asks: dict[Asset, SortedDict[float, float]] = {
+            asset: SortedDict() for asset in self.subscribed_assets
         }
 
     @override
@@ -57,10 +58,10 @@ class KrakenFutureWebsocketClient(WebSocketClient):
             {"event": "subscribe", "feed": "book", "product_ids": kraken_asset_ids},
         ]
         # bc prod_assert doesn't check None
-        assert(
-            self.ws is not None,
-            "WebSocket must be initialized before sending messages.",
-        )
+        assert (
+            self.ws is not None
+        ), "WebSocket must be initialized before sending messages."
+
         for message in subscription_messages:
             await self.ws.send(json.dumps(message))
             _logger.warning(f"Sent subscription message: {message}")
@@ -186,20 +187,11 @@ class KrakenFutureWebsocketClient(WebSocketClient):
     def poll_snapshots(self) -> dict[Asset, SnapshotMessage]:
         for asset in self.subscribed_assets:
             self.snapshot_messages[asset].time = int(time.time())
-            self.snapshot_messages[asset].bids = []
-            self.snapshot_messages[asset].asks = []
-
-            for price, quantity in self.bids[asset].items():
-                self.snapshot_messages[asset].bids.append((price, quantity))
-
-            for price, quantity in self.asks[asset].items():
-                self.snapshot_messages[asset].asks.append((price, quantity))
-
-            self.snapshot_messages[asset].bids = sorted(
-                self.snapshot_messages[asset].bids, key=lambda x: -x[0]
-            )
-            self.snapshot_messages[asset].asks = sorted(
-                self.snapshot_messages[asset].asks
-            )
+            self.snapshot_messages[asset].bids = [
+                (price, quantity) for price, quantity in self.bids[asset].items()
+            ]
+            self.snapshot_messages[asset].asks = [
+                (price, quantity) for price, quantity in self.asks[asset].items()
+            ]
 
         return self.snapshot_messages

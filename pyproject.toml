@@ -21,6 +21,7 @@ numpy = "^2.1.2"
 pyzstd = "^0.16.2"
 pytest-asyncio = "^0.21.2"
 websockets = "^14.0"
+sortedcontainers = "^2.4.0"
 
 [build-system]
 requires = ["poetry-core"]
