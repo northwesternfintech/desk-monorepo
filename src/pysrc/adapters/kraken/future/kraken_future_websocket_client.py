@@ -56,7 +56,8 @@ class KrakenFutureWebsocketClient(WebSocketClient):
             {"event": "subscribe", "feed": "trade", "product_ids": kraken_asset_ids},
             {"event": "subscribe", "feed": "book", "product_ids": kraken_asset_ids},
         ]
-        prod_assert(
+        # bc prod_assert doesn't check None
+        assert(
             self.ws is not None,
             "WebSocket must be initialized before sending messages.",
         )
