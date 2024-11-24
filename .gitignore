@@ -1,0 +1,10 @@
+__pycache__
+.mypy_cache
+.DS_Store
+.env
+.vscode
+build
+CMakeUserPresets.json
+cmake-build-debug
+CMakeFiles
+logs/

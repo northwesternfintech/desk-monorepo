@@ -1,0 +1,31 @@
+name: CI - Python Linting and Type Checking
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  python-lint-and-type-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install project dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pipx install poetry
+
+    - name: Install poetry dependencies
+      run: make install
+
+    - name: Run ruff and mypy
+      run: make pylint
