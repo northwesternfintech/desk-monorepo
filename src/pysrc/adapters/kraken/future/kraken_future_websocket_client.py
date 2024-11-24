@@ -56,9 +56,10 @@ class KrakenFutureWebsocketClient(WebSocketClient):
             {"event": "subscribe", "feed": "trade", "product_ids": kraken_asset_ids},
             {"event": "subscribe", "feed": "book", "product_ids": kraken_asset_ids},
         ]
-        assert (
-            self.ws is not None
-        ), "WebSocket must be initialized before sending messages."
+        prod_assert(
+            self.ws is not None,
+            "WebSocket must be initialized before sending messages.",
+        )
         for message in subscription_messages:
             await self.ws.send(json.dumps(message))
             _logger.warning(f"Sent subscription message: {message}")

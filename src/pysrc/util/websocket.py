@@ -46,11 +46,15 @@ class WebSocketClient(ABC):
 
             except websockets.ConnectionClosed as e:
                 _logger.warning(f"WebSocket connection closed: {e}")
-                raise RuntimeError("WebSocket connection was unexpectedly closed.") from e
+                raise RuntimeError(
+                    "WebSocket connection was unexpectedly closed."
+                ) from e
 
             except Exception as e:
                 _logger.warning(f"Unexpected error: {e}")
-                raise RuntimeError("An unexpected error occurred while handling the WebSocket.") from e
+                raise RuntimeError(
+                    "An unexpected error occurred while handling the WebSocket."
+                ) from e
             finally:
                 await self.on_disconnect()
 
