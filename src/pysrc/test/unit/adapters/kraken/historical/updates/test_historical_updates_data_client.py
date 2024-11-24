@@ -29,20 +29,20 @@ resource_path = str(get_resources_path(__file__))
 def test_mbp_book() -> None:
     book = MBPBook("BONKUSD", Market.KRAKEN_USD_FUTURE)
 
-    book.apply_delta(UpdateDelta(OrderSide.BID, 0, 1, 10, 12))
+    book.apply_delta(UpdateDelta(OrderSide.BID, 0, 12, 10))
     assert book._book[OrderSide.BID.value - 1][12] == 10
     assert not book._book[OrderSide.ASK.value - 1]
 
-    book.apply_delta(UpdateDelta(OrderSide.ASK, 0, 1, 10, 15))
+    book.apply_delta(UpdateDelta(OrderSide.ASK, 0, 15, 10))
     assert book._book[OrderSide.ASK.value - 1][15] == 10
 
-    book.apply_delta(UpdateDelta(OrderSide.BID, 0, -1, 3, 12))
+    book.apply_delta(UpdateDelta(OrderSide.BID, 0, 12, -3))
     assert book._book[OrderSide.BID.value - 1][12] == 7
 
-    book.apply_delta(UpdateDelta(OrderSide.BID, 0, -1, 7, 12))
+    book.apply_delta(UpdateDelta(OrderSide.BID, 0, 12, -7))
     assert 12 not in book._book[OrderSide.BID.value - 1]
 
-    book.apply_delta(UpdateDelta(OrderSide.BID, 0, 1, 10, 12))
+    book.apply_delta(UpdateDelta(OrderSide.BID, 0, 12, 10))
 
     snapshot = book.to_snapshot_message(0)
     assert snapshot.time == 0
@@ -75,14 +75,14 @@ def random_fill_queue(queue: ChunkedEventQueue) -> None:
         other_event_type = EventType(1 - (choice % 2))
 
         for j in range(3):
-            delta = UpdateDelta(OrderSide.BID, i * 4 + j, 1, i * 4 + j, i * 4 + j)
+            delta = UpdateDelta(OrderSide.BID, i * 4 + j, i * 4 + j, i * 4 + j)
             queue.put([delta], event_type, i)
 
         time.sleep(0.05)
         queue.mark_done(event_type, i)
         time.sleep(0.05)
 
-        delta = UpdateDelta(OrderSide.BID, i * 4 + 3, 1, i * 4 + 3, i * 4 + 3)
+        delta = UpdateDelta(OrderSide.BID, i * 4 + 3, i * 4 + 3, i * 4 + 3)
         queue.put([delta], other_event_type, i)
 
         time.sleep(0.05)
@@ -104,17 +104,17 @@ def test_chunked_event_queue() -> None:
         assert delta is not None
         assert delta.side == OrderSide.BID
         assert delta.timestamp == i
-        assert delta.sign == 1
-        assert delta.price == i
-        assert delta.quantity == i
+        assert len(delta.deltas) == 1
+        assert i in delta.deltas
+        assert delta.deltas[i] == i
 
         delta = queue.get()
         assert delta is not None
         assert delta.side == OrderSide.BID
         assert delta.timestamp == i
-        assert delta.sign == 1
-        assert delta.price == i
-        assert delta.quantity == i
+        assert len(delta.deltas) == 1
+        assert i in delta.deltas
+        assert delta.deltas[i] == i
 
     assert queue.empty()
     assert queue.peek() is None
@@ -269,27 +269,24 @@ def test_get_order_events(
 
     res = client._get_order_events("")
     assert res.continuation_token == "c3RyaW5n"
-    assert len(res.deltas) == 4
+    assert len(res.deltas) == 3
 
     assert res.deltas[0].side == OrderSide.ASK
-    assert res.deltas[0].price == 1
-    assert res.deltas[0].quantity == 2
-    assert res.deltas[0].sign == 1
+    assert len(res.deltas[0].deltas) == 1
+    assert 1 in res.deltas[0].deltas
+    assert res.deltas[0].deltas[1] == 2
 
     assert res.deltas[1].side == OrderSide.BID
-    assert res.deltas[1].price == 3
-    assert res.deltas[1].quantity == 4
-    assert res.deltas[1].sign == 1
+    assert len(res.deltas[1].deltas) == 2
+    assert 3 in res.deltas[1].deltas
+    assert res.deltas[1].deltas[3] == 4
+    assert 5 in res.deltas[1].deltas
+    assert res.deltas[1].deltas[5] == -6
 
     assert res.deltas[2].side == OrderSide.BID
-    assert res.deltas[2].price == 5
-    assert res.deltas[2].quantity == 6
-    assert res.deltas[2].sign == -1
-
-    assert res.deltas[3].side == OrderSide.BID
-    assert res.deltas[3].price == 7
-    assert res.deltas[3].quantity == 8
-    assert res.deltas[3].sign == -1
+    assert len(res.deltas[2].deltas) == 1
+    assert 7 in res.deltas[2].deltas
+    assert res.deltas[2].deltas[7] == -8
 
 
 @patch.object(HistoricalUpdatesDataClient, "_request")
@@ -303,14 +300,14 @@ def test_get_execution_events(
     assert len(res.deltas) == 2
 
     assert res.deltas[0].side == OrderSide.BID
-    assert res.deltas[0].price == 68717.5
-    assert res.deltas[0].quantity == 3000
-    assert res.deltas[0].sign == -1
+    assert len(res.deltas[0].deltas) == 1
+    assert 68717.5 in res.deltas[0].deltas
+    assert res.deltas[0].deltas[68717.5] == -3000
 
     assert res.deltas[1].side == OrderSide.ASK
-    assert res.deltas[1].price == 68717.5
-    assert res.deltas[1].quantity == 3000
-    assert res.deltas[1].sign == -1
+    assert len(res.deltas[1].deltas) == 1
+    assert 68717.5 in res.deltas[1].deltas
+    assert res.deltas[1].deltas[68717.5] == -3000
 
 
 @patch.object(HistoricalUpdatesDataClient, "_request")
@@ -331,7 +328,7 @@ def test_queue_events_for_day(
     )
 
     assert client._queue._statuses[EventType.ORDER][0]
-    assert len(client._queue._chunks[0]) == 4
+    assert len(client._queue._chunks[0]) == 3
     client._queue._cond_var.notify.assert_called()
 
     client._queue._cond_var = MagicMock()
@@ -344,22 +341,26 @@ def test_queue_events_for_day(
         EventType.EXECUTION,
     )
     assert client._queue._statuses[EventType.EXECUTION][0]
-    assert len(client._queue._chunks[0]) == 6
+    assert len(client._queue._chunks[0]) == 5
     client._queue._cond_var.notify.assert_called()
 
     client._queue.peek()
-    assert len(client._queue._queue) == 6
+    assert len(client._queue._queue) == 5
     assert not (client._queue.empty() or client._queue.failed())
     assert client._queue._cur_chunk == 1
 
 
 def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
-    client._cur_mbp_book = MBPBook(feedcode="PF_XBTUSD", market=Market.KRAKEN_USD_FUTURE)
+    client._cur_mbp_book = MBPBook(
+        feedcode="PF_XBTUSD", market=Market.KRAKEN_USD_FUTURE
+    )
     client._queue = ChunkedEventQueue(num_chunks=1)
     client._cur_sec = 1
 
     for e in ORDER_EVENTS["elements"]:
-        client._queue.put(client._delta_from_order_event(e), EventType.ORDER, 0)
+        delta = client._delta_from_order_event(e)
+        assert delta is not None
+        client._queue.put([client._delta_from_order_event(e)], EventType.ORDER, 0)
 
     for e in EXECUTION_EVENTS["elements"]:
         client._queue.put(client._delta_from_execution_event(e), EventType.EXECUTION, 0)
@@ -417,7 +418,7 @@ def test_fail_download_updates(
 ) -> None:
     mock_make_request.side_effect = ValueError()
 
-    with pytest.raises(ValueError) as e_info:
+    with pytest.raises(RuntimeError) as e_info:
         client.download_updates(
             asset=Asset.BTC, since=datetime(year=2024, month=11, day=5)
         )

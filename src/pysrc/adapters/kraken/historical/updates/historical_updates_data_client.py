@@ -1,17 +1,13 @@
-from io import BufferedIOBase
 import os
-from pathlib import Path
-import struct
+import time
 from datetime import datetime, timedelta
+from pathlib import Path
 from threading import Thread
-from typing import Any, Generator, Optional
+from typing import Any, Optional
 
-import numpy as np
 import requests
-from pysrc.adapters.kraken.asset_mappings import asset_to_kraken
-from pysrc.data_handlers.kraken.historical.snapshots_data_handler import SnapshotsDataHandler
-from pyzstd import CParameter, EndlessZstdDecompressor, ZstdCompressor
 
+from pysrc.adapters.kraken.asset_mappings import asset_to_kraken
 from pysrc.adapters.kraken.historical.updates.containers import (
     ChunkedEventQueue,
     EventType,
@@ -25,6 +21,9 @@ from pysrc.adapters.kraken.historical.updates.utils import (
     str_to_order_side,
 )
 from pysrc.adapters.messages import SnapshotMessage
+from pysrc.data_handlers.kraken.historical.snapshots_data_handler import (
+    SnapshotsDataHandler,
+)
 from pysrc.util.types import Asset, Market, OrderSide
 
 
@@ -49,7 +48,7 @@ class HistoricalUpdatesDataClient:
 
         return res.json()
 
-    def _delta_from_order_event(self, e: dict) -> list[UpdateDelta]:
+    def _delta_from_order_event(self, e: dict) -> Optional[UpdateDelta]:
         event_json = e["event"]
         event_type_str = list(event_json.keys())[0]
         event_type = str_to_order_event_type(event_type_str)
@@ -58,48 +57,51 @@ class HistoricalUpdatesDataClient:
             case OrderEventType.PLACED | OrderEventType.CANCELLED:
                 order_json = event_json[event_type_str]["order"]
 
-                return [
-                    UpdateDelta(
-                        side=str_to_order_side(order_json["direction"]),
-                        timestamp=e["timestamp"] // 1000,
-                        sign=1 if event_type == OrderEventType.PLACED else -1,
-                        quantity=float(order_json["quantity"]),
-                        price=float(order_json["limitPrice"]),
-                    )
-                ]
+                quantity = float(order_json["quantity"]) * (
+                    1 if event_type == OrderEventType.PLACED else -1
+                )
+                price = float(order_json["limitPrice"])
+
+                delta = UpdateDelta(
+                    side=str_to_order_side(order_json["direction"]),
+                    timestamp=e["timestamp"] // 1000,
+                    price=price,
+                    quantity=quantity,
+                )
+
+                return delta
             case OrderEventType.UPDATED:
                 new_order_json = event_json[event_type_str]["newOrder"]
                 old_order_json = event_json[event_type_str]["oldOrder"]
 
-                return [
-                    UpdateDelta(
-                        side=str_to_order_side(new_order_json["direction"]),
-                        timestamp=e["timestamp"] // 1000,
-                        sign=1,
-                        quantity=float(new_order_json["quantity"]),
-                        price=float(new_order_json["limitPrice"]),
-                    ),
-                    UpdateDelta(
-                        side=str_to_order_side(old_order_json["direction"]),
-                        timestamp=e["timestamp"] // 1000,
-                        sign=-1,
-                        quantity=float(old_order_json["quantity"]),
-                        price=float(old_order_json["limitPrice"]),
-                    ),
-                ]
+                new_quantity = float(new_order_json["quantity"])
+                new_price = float(new_order_json["limitPrice"])
+
+                delta = UpdateDelta(
+                    side=str_to_order_side(new_order_json["direction"]),
+                    timestamp=e["timestamp"] // 1000,
+                    price=new_price,
+                    quantity=new_quantity,
+                )
+
+                old_quantity = -1 * float(old_order_json["quantity"])
+                old_price = float(old_order_json["limitPrice"])
+                delta.add(old_price, old_quantity)
+
+                return delta
             case OrderEventType.REJECTED | OrderEventType.EDIT_REJECTED:
-                return []
+                return None
             case _:
                 raise ValueError(f"Received malformed event {e}")
 
     def _get_order_events(
         self,
-        asset: str,
+        kraken_asset: str,
         since: Optional[int] = None,
         before: Optional[int] = None,
         continuation_token: Optional[str] = None,
     ) -> OrderEventResponse:
-        route = f"https://futures.kraken.com/api/history/v3/market/{asset}/orders"
+        route = f"https://futures.kraken.com/api/history/v3/market/{kraken_asset}/orders"
 
         params = {
             "sort": "asc",
@@ -110,42 +112,52 @@ class HistoricalUpdatesDataClient:
 
         res = self._request(route, params)
 
-        deltas = []
+        deltas = [UpdateDelta(OrderSide.BID, -1, 0, 0)]
         for e in res["elements"]:
-            deltas.extend(self._delta_from_order_event(e))
+            delta = self._delta_from_order_event(e)
+            if delta:
+                if (
+                    delta.timestamp == deltas[-1].timestamp
+                    and delta.side == deltas[-1].side
+                ):
+                    deltas[-1].add_delta(delta)
+                else:
+                    deltas.append(delta)
 
         return OrderEventResponse(
-            continuation_token=res.get("continuationToken"), deltas=deltas
+            continuation_token=res.get("continuationToken"), deltas=deltas[1:]
         )
 
     def _delta_from_execution_event(self, e: dict) -> list[UpdateDelta]:
         event_json = e["event"]["Execution"]["execution"]
 
-        return [
-            UpdateDelta(
-                side=OrderSide.BID,
-                timestamp=event_json["timestamp"] // 1000,
-                sign=-1,
-                quantity=float(event_json["quantity"]),
-                price=float(event_json["price"]),
-            ),
-            UpdateDelta(
-                side=OrderSide.ASK,
-                timestamp=event_json["timestamp"] // 1000,
-                sign=-1,
-                quantity=float(event_json["quantity"]),
-                price=float(event_json["price"]),
-            ),
-        ]
+        bid_quantity = -1 * float(event_json["quantity"])
+        bid_price = float(event_json["price"])
+
+        bid_delta = UpdateDelta(
+            side=OrderSide.BID,
+            timestamp=event_json["timestamp"] // 1000,
+            price=bid_price,
+            quantity=bid_quantity,
+        )
+
+        ask_delta = UpdateDelta(
+            side=OrderSide.ASK,
+            timestamp=bid_delta.timestamp,
+            price=bid_price,
+            quantity=bid_quantity,
+        )
+
+        return [bid_delta, ask_delta]
 
     def _get_execution_events(
         self,
-        asset: str,
+        kraken_asset: str,
         since: Optional[int] = None,
         before: Optional[int] = None,
         continuation_token: Optional[str] = None,
     ) -> OrderEventResponse:
-        route = f"https://futures.kraken.com/api/history/v3/market/{asset}/executions"
+        route = f"https://futures.kraken.com/api/history/v3/market/{kraken_asset}/executions"
 
         params = {
             "sort": "asc",
@@ -156,17 +168,24 @@ class HistoricalUpdatesDataClient:
 
         res = self._request(route, params)
 
-        deltas = []
+        deltas = [UpdateDelta(OrderSide.BID, -1, 0, 0)]
         for e in res["elements"]:
-            deltas.extend(self._delta_from_execution_event(e))
+            for delta in self._delta_from_execution_event(e):
+                if (
+                    delta.timestamp == deltas[-1].timestamp
+                    and delta.side == deltas[-1].side
+                ):
+                    deltas[-1].add_delta(delta)
+                else:
+                    deltas.append(delta)
 
         return OrderEventResponse(
-            continuation_token=res.get("continuationToken"), deltas=deltas
+            continuation_token=res.get("continuationToken"), deltas=deltas[1:]
         )
 
     def _queue_events_for_chunk(
         self,
-        asset: str,
+        kraken_asset: str,
         since: datetime,
         until: datetime,
         chunk_idx: int,
@@ -183,9 +202,10 @@ class HistoricalUpdatesDataClient:
 
         try:
             continuation_token = None
-            while True:
+
+            while not self._queue.failed():
                 order_res = get_events_func(
-                    asset=asset,
+                    kraken_asset=kraken_asset,
                     since=since_time,
                     before=before_time,
                     continuation_token=continuation_token,
@@ -232,7 +252,7 @@ class HistoricalUpdatesDataClient:
         self,
         kraken_asset: str,
         day: datetime,
-    ) -> str:
+    ) -> Path:
         snapshot_path = Path(self._resource_path) / "snapshots" / kraken_asset
         if not os.path.exists(snapshot_path):
             os.makedirs(snapshot_path)
@@ -288,6 +308,7 @@ class HistoricalUpdatesDataClient:
         until: Optional[datetime] = None,
         max_retry_count: Optional[int] = 3,
     ) -> None:
+        self._start_time = time.time()
         if max_retry_count is None:
             max_retry_count = 3
 
@@ -301,7 +322,9 @@ class HistoricalUpdatesDataClient:
         )
         self._last_saved_sec = int(since.timestamp())
 
-        self._cur_mbp_book = MBPBook(feedcode=kraken_asset, market=Market.KRAKEN_USD_FUTURE)
+        self._cur_mbp_book = MBPBook(
+            feedcode=kraken_asset, market=Market.KRAKEN_USD_FUTURE
+        )
         self._cur_sec = int(since.timestamp())
 
         for i in range((until - since).days):
@@ -309,6 +332,8 @@ class HistoricalUpdatesDataClient:
 
             cur = since + timedelta(days=i)
             for _ in range(max_retry_count):
+                succeeded = True
+
                 self._queue = ChunkedEventQueue(num_chunks=self._NUM_CHUNKS)
                 update_file_path = self._compute_updates_for_day(kraken_asset, cur)
 
@@ -327,6 +352,6 @@ class HistoricalUpdatesDataClient:
 
             if not succeeded:
                 failed_day_str = cur.strftime("%m_%d_%Y")
-                raise ValueError(
+                raise RuntimeError(
                     f"Failed to download updates for '{kraken_asset}' for date '{failed_day_str}'"
                 )
