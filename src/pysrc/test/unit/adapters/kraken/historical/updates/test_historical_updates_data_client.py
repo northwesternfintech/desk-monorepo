@@ -360,7 +360,7 @@ def test_compute_next_snapshot(client: HistoricalUpdatesDataClient) -> None:
     for e in ORDER_EVENTS["elements"]:
         delta = client._delta_from_order_event(e)
         assert delta is not None
-        client._queue.put([client._delta_from_order_event(e)], EventType.ORDER, 0)
+        client._queue.put([delta], EventType.ORDER, 0)
 
     for e in EXECUTION_EVENTS["elements"]:
         client._queue.put(client._delta_from_execution_event(e), EventType.EXECUTION, 0)

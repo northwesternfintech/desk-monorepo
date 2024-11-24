@@ -6,7 +6,6 @@ from pysrc.util.types import Market, OrderSide
 
 
 class SnapshotMessage:
-    # @profile
     def __init__(
         self,
         time: int,
