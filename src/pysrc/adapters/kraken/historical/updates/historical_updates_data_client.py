@@ -25,7 +25,7 @@ from pysrc.data_handlers.kraken.historical.snapshots_data_handler import (
     SnapshotsDataHandler,
 )
 from pysrc.util.types import Asset, Market, OrderSide
-from src.pysrc.util.exceptions import DIE
+from pysrc.util.exceptions import DIE
 
 
 class HistoricalUpdatesDataClient:
