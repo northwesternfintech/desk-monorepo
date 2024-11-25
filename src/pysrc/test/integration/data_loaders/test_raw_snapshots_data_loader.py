@@ -33,7 +33,7 @@ def test_initialization_error() -> None:
             asset=Asset.ADA,
             market=Market.KRAKEN_SPOT,
             since=date(year=2024, month=6, day=25),
-            until=None,
+            until=date(year=2024, month=7, day=1),
         )
     assert "Directory for asset snapshots data" in str(
         msg.value
@@ -45,7 +45,7 @@ def test_initialization_error() -> None:
             asset=Asset.ADA,
             market=Market.KRAKEN_SPOT,
             since=date(year=2024, month=6, day=1),
-            until=None,
+            until=date(year=2024, month=7, day=1),
         )
     assert "Expected file" in str(msg.value) and "doesn't exist" in str(msg.value)
 
@@ -56,7 +56,7 @@ def test_get_data_error() -> None:
         asset=Asset.ADA,
         market=Market.KRAKEN_SPOT,
         since=date(year=2024, month=6, day=25),
-        until=None,
+        until=date(year=2024, month=7, day=1),
     )
 
     with pytest.raises(ValueError) as msg:
@@ -75,21 +75,21 @@ def test_get_data_error() -> None:
 
 
 def test_get_data_success() -> None:
+    start = date(year=2024, month=6, day=25)
+    end = date(year=2024, month=7, day=1)
+
     handler = SnapshotsDataHandler()
     loader = RawSnapshotsDataLoader(
         resource_path=resource_path,
         asset=Asset.ADA,
         market=Market.KRAKEN_SPOT,
-        since=date(year=2024, month=6, day=25),
-        until=None,
+        since=start,
+        until=end,
     )
 
     target_path = resource_path / "snapshots" / "XADAZUSD" / "test.bin"
     targets = handler.read(target_path)
-    snapshots = loader.get_data(
-        date(year=2024, month=6, day=25),
-        date(year=2024, month=7, day=1),
-    )
+    snapshots = loader.get_data(start, end)
 
     assert len(snapshots) == len(targets)
     for i in range(len(snapshots)):
@@ -107,7 +107,7 @@ def test_next_success() -> None:
         asset=Asset.ADA,
         market=Market.KRAKEN_SPOT,
         since=date(year=2024, month=6, day=25),
-        until=None,
+        until=date(year=2024, month=7, day=1),
     )
 
     target_path = resource_path / "snapshots" / "XADAZUSD" / "test.bin"

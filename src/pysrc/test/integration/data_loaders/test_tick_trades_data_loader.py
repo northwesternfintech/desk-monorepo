@@ -30,7 +30,7 @@ def test_initialization_error() -> None:
             asset=Asset.ADA,
             market=Market.KRAKEN_SPOT,
             since=date(year=2024, month=6, day=25),
-            until=None,
+            until=date(year=2024, month=7, day=1),
         )
     assert "Directory for asset trades data" in str(
         msg.value
@@ -42,7 +42,7 @@ def test_initialization_error() -> None:
             asset=Asset.ADA,
             market=Market.KRAKEN_SPOT,
             since=date(year=2024, month=6, day=1),
-            until=None,
+            until=date(year=2024, month=7, day=1),
         )
     assert "Expected file" in str(msg.value) and "doesn't exist" in str(msg.value)
 
@@ -53,7 +53,7 @@ def test_get_data_error() -> None:
         asset=Asset.ADA,
         market=Market.KRAKEN_SPOT,
         since=date(year=2024, month=6, day=25),
-        until=None,
+        until=date(year=2024, month=7, day=1),
     )
 
     with pytest.raises(ValueError) as msg:
@@ -72,12 +72,14 @@ def test_get_data_error() -> None:
 
 
 def test_get_data_success() -> None:
+    start = date(year=2024, month=6, day=25)
+    end = date(year=2024, month=7, day=1)
     loader = TickTradesDataLoader(
         resource_path=resource_path,
         asset=Asset.ADA,
         market=Market.KRAKEN_SPOT,
-        since=date(year=2024, month=6, day=25),
-        until=None,
+        since=start,
+        until=end,
     )
 
     target = np.loadtxt(
@@ -85,10 +87,7 @@ def test_get_data_success() -> None:
         delimiter=",",
         dtype=[("time", "u8"), ("price", "f4"), ("volume", "f4")],
     )
-    trades = loader.get_data(
-        since=date(year=2024, month=6, day=25),
-        until=date(year=2024, month=7, day=1),
-    )
+    trades = loader.get_data(start, end)
 
     assert len(trades) == target.shape[0]
     for i in range(len(trades)):
@@ -99,12 +98,13 @@ def test_get_data_success() -> None:
 
 def test_next_success() -> None:
     start = date(year=2024, month=6, day=25)
+    end = date(year=2024, month=7, day=1)
     loader = TickTradesDataLoader(
         resource_path=resource_path,
         asset=Asset.ADA,
         market=Market.KRAKEN_SPOT,
         since=start,
-        until=None,
+        until=end,
     )
 
     target = np.loadtxt(
@@ -115,7 +115,7 @@ def test_next_success() -> None:
 
     idx = 0
     count = 0
-    cur_epoch = loader._date_to_epoch(start)
+    cur_epoch = loader._date_to_timestamp(start)
     while True:
         trades = loader.next()
         if trades is None:

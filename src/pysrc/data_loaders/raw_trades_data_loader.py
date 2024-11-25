@@ -16,17 +16,11 @@ class RawTradesDataLoader(BaseDataLoader):
         asset: Asset,
         market: Market,
         since: date,
-        until: Optional[date] = None,
+        until: date,
     ) -> None:
-        try:
-            feedcode = asset_to_kraken(asset, market)
-        except Exception as _:
-            raise ValueError(
-                "Invalid asset or market - cannot convert to Kraken feedcode"
-            )
-
+        self._feedcode = asset_to_kraken(asset, market)
         self._resource_path = resource_path
-        self._asset_resource_path = resource_path / "trades" / feedcode
+        self._asset_resource_path = resource_path / "trades" / self._feedcode
         if not self._asset_resource_path.exists():
             raise ValueError(
                 f"Directory for asset trades data '{self._asset_resource_path}' doesn't exist"
@@ -37,7 +31,7 @@ class RawTradesDataLoader(BaseDataLoader):
         self._handler = TradesDataHandler()
 
         self._since = since
-        self._until = date.today() if not until else until
+        self._until = until
         if self._since >= self._until:
             raise ValueError(
                 f"Dates since ({self._since.strftime("%m_%d_%Y")}) equal to or later than until ({self._until.strftime("%m_%d_%Y")})"
