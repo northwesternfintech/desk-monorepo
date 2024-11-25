@@ -25,6 +25,7 @@ from pysrc.data_handlers.kraken.historical.snapshots_data_handler import (
     SnapshotsDataHandler,
 )
 from pysrc.util.types import Asset, Market, OrderSide
+from src.pysrc.util.exceptions import DIE
 
 
 class HistoricalUpdatesDataClient:
@@ -44,7 +45,7 @@ class HistoricalUpdatesDataClient:
     def _request(self, route: str, params: dict[str, Any]) -> Any:
         res = self._session.get(route, params=params)
         if res.status_code != 200:
-            raise ValueError(f"Failed to get from '{route}', received {res.text}")
+            DIE(f"Failed to get from '{route}', received {res.text}")
 
         return res.json()
 
@@ -92,7 +93,7 @@ class HistoricalUpdatesDataClient:
             case OrderEventType.REJECTED | OrderEventType.EDIT_REJECTED:
                 return None
             case _:
-                raise ValueError(f"Received malformed event {e}")
+                DIE(f"Received malformed event {e}")
 
     def _get_order_events(
         self,
