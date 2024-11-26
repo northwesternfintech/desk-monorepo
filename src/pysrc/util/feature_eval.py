@@ -25,12 +25,12 @@ class Evaluator:
         end: datetime,
         resource_path: Path,
     ):
-        self.features = features
-        self.asset = asset
-        self.start = start
-        self.end = end
-        self.market = market
-        self.resource_path = resource_path
+        self._features = features
+        self._asset = asset
+        self._start = start
+        self._end = end
+        self._market = market
+        self._resource_path = resource_path
 
     def _get_data_daterange(
         self,
@@ -43,11 +43,11 @@ class Evaluator:
         trade_generators = []
         snapshot_generators = []
         delta_time = timedelta(days=1)
-        asset_str = asset_to_kraken(self.asset, self.market)
+        asset_str = asset_to_kraken(self._asset, self._market)
 
         while start <= end:
             trades_filepath = (
-                self.resource_path
+                self._resource_path
                 / "trades"
                 / asset_str
                 / (start.strftime("%m_%d_%Y") + ".bin")
@@ -55,7 +55,7 @@ class Evaluator:
             trade_gen = trades_client.stream_read(trades_filepath)
 
             snapshots_filepath = (
-                self.resource_path
+                self._resource_path
                 / "snapshots"
                 / asset_str
                 / (start.strftime("%m_%d_%Y") + ".bin")
@@ -74,26 +74,26 @@ class Evaluator:
         self,
         generator_client: BaseFeatureGenerator,
     ) -> dict[str, list[float]]:
-        data = self._get_data_daterange(self.start, self.end)
+        data = self._get_data_daterange(self._start, self._end)
 
         feature_dict: dict[str, list[float]] = {}
-        for feature in self.features:
+        for feature in self._features:
             feature_dict[feature] = []
 
-        asset_str = asset_to_kraken(self.asset, self.market)
+        asset_str = asset_to_kraken(self._asset, self._market)
 
         for trade, snapshot in data:
             calc_features = generator_client.on_tick(
                 {asset_str: snapshot}, {asset_str: [trade]}
             )
-            for feature in self.features:
-                feature_dict[feature].extend(calc_features[self.asset][feature])
+            for feature in self._features:
+                feature_dict[feature].extend(calc_features[self._asset][feature])
         return feature_dict
 
     def evaluate_features(
         self, calc_features: dict[str, list[float]], target: list[float]
     ) -> np.ndarray:
         input_matrix = []
-        for feature in self.features:
+        for feature in self._features:
             input_matrix.append(calc_features[feature])
         return np.corrcoef(input_matrix, target)
