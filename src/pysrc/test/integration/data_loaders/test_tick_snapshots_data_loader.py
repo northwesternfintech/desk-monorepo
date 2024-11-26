@@ -75,10 +75,9 @@ def test_get_data_error() -> None:
     assert "Expected file" in str(msg.value) and "doesn't exist" in str(msg.value)
 
 
-def test_get_data_success() -> None:
-    start = date(year=2024, month=6, day=25)
-    end = date(year=2024, month=7, day=1)
-
+def test_get_data_and_next_success() -> None:
+    start = date(year=2024, month=6, day=26)
+    end = date(year=2024, month=6, day=30)
     handler = SnapshotsDataHandler()
     loader = TickSnapshotsDataLoader(
         resource_path=resource_path,
@@ -88,63 +87,58 @@ def test_get_data_success() -> None:
         until=end,
     )
 
-    target_path = resource_path / "snapshots" / "XADAZUSD" / "test.bin"
-    targets = handler.read(target_path)
-    snapshots = loader.get_data(start, end)
-
-    assert len(snapshots) == len(targets)
-    for i in range(len(snapshots)):
-        assert snapshots[i].time == targets[i].time
-        assert snapshots[i].bids == targets[i].bids
-        assert snapshots[i].asks == targets[i].asks
-        assert snapshots[i].feedcode == targets[i].feedcode
-        assert snapshots[i].market == targets[i].market
-
-
-def test_next_success() -> None:
-    start = date(year=2024, month=6, day=25)
-    end = date(year=2024, month=7, day=1)
-    handler = SnapshotsDataHandler()
-    loader = TickSnapshotsDataLoader(
-        resource_path=resource_path,
-        asset=Asset.ADA,
-        market=Market.KRAKEN_SPOT,
-        since=start,
-        until=end,
-    )
+    all_snapshots = loader.get_data(start, end)
 
     target_path = resource_path / "snapshots" / "XADAZUSD" / "test.bin"
     targets = handler.read(target_path)
+    targets = [
+        target
+        for target in targets
+        if (target.time >= loader._date_to_timestamp(start))
+        and (target.time < loader._date_to_timestamp(end))
+    ]
 
-    idx = 0
+    all_snapshots_idx = 0
+    target_idx = 0
     count = 0
     cur_epoch = loader._date_to_timestamp(start)
     if targets[0].time == cur_epoch:
-        cur_snapshot = targets[0]
+        target_snapshot = targets[0]
     else:
-        cur_snapshot = SnapshotMessage(
+        target_snapshot = SnapshotMessage(
             time=cur_epoch,
             feedcode="XADAZUSD",
             bids=[],
             asks=[],
             market=Market.KRAKEN_SPOT,
         )
+        target_idx = -1
 
     while True:
         snapshot = loader.next()
         if snapshot is None:
             break
-        while (idx + 1 < len(targets)) and (cur_epoch == targets[idx + 1].time):
-            idx += 1
-            cur_snapshot = targets[idx]
+        while (target_idx + 1 < len(targets)) and (
+            cur_epoch == targets[target_idx + 1].time
+        ):
+            target_idx += 1
+            target_snapshot = targets[target_idx]
 
-        assert snapshot.time == cur_snapshot.time
-        assert snapshot.bids == cur_snapshot.bids
-        assert snapshot.asks == cur_snapshot.asks
-        assert snapshot.feedcode == cur_snapshot.feedcode
-        assert snapshot.market == cur_snapshot.market
+        assert snapshot.time == target_snapshot.time
+        assert snapshot.bids == target_snapshot.bids
+        assert snapshot.asks == target_snapshot.asks
+        assert snapshot.feedcode == target_snapshot.feedcode
+        assert snapshot.market == target_snapshot.market
 
+        assert snapshot.time == all_snapshots[all_snapshots_idx].time
+        assert snapshot.bids == all_snapshots[all_snapshots_idx].bids
+        assert snapshot.asks == all_snapshots[all_snapshots_idx].asks
+        assert snapshot.feedcode == all_snapshots[all_snapshots_idx].feedcode
+        assert snapshot.market == all_snapshots[all_snapshots_idx].market
+
+        all_snapshots_idx += 1
         cur_epoch += 1
         count += 1
 
-    assert count == 60 * 60 * 24 * 6
+    assert count == 60 * 60 * 24 * 4
+    assert len(all_snapshots) == 60 * 60 * 24 * 4

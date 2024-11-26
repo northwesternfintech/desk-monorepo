@@ -71,9 +71,9 @@ def test_get_data_error() -> None:
     assert "Expected file" in str(msg.value) and "doesn't exist" in str(msg.value)
 
 
-def test_get_data_success() -> None:
-    start = date(year=2024, month=6, day=25)
-    end = date(year=2024, month=7, day=1)
+def test_get_data_and_next_success() -> None:
+    start = date(year=2024, month=6, day=26)
+    end = date(year=2024, month=6, day=30)
     loader = TickTradesDataLoader(
         resource_path=resource_path,
         asset=Asset.ADA,
@@ -82,50 +82,41 @@ def test_get_data_success() -> None:
         until=end,
     )
 
-    target = np.loadtxt(
+    targets = np.loadtxt(
         resource_path / "trades" / "XADAZUSD" / "test.csv",
         delimiter=",",
         dtype=[("time", "u8"), ("price", "f4"), ("volume", "f4")],
     )
-    trades = loader.get_data(start, end)
-
-    assert len(trades) == target.shape[0]
-    for i in range(len(trades)):
-        assert trades[i].time == target[i][0]
-        assert trades[i].price == target[i][1]
-        assert trades[i].quantity == target[i][2]
-
-
-def test_next_success() -> None:
-    start = date(year=2024, month=6, day=25)
-    end = date(year=2024, month=7, day=1)
-    loader = TickTradesDataLoader(
-        resource_path=resource_path,
-        asset=Asset.ADA,
-        market=Market.KRAKEN_SPOT,
-        since=start,
-        until=end,
+    mask = (targets["time"] >= loader._date_to_timestamp(start)) & (
+        targets["time"] <= loader._date_to_timestamp(end)
     )
+    targets = targets[mask]
+    all_trades = loader.get_data(start, end)
 
-    target = np.loadtxt(
-        resource_path / "trades" / "XADAZUSD" / "test.csv",
-        delimiter=",",
-        dtype=[("time", "u8"), ("price", "f4"), ("volume", "f4")],
-    )
-
-    idx = 0
+    target_idx = 0
+    all_trades_idx = 0
     count = 0
     cur_epoch = loader._date_to_timestamp(start)
     while True:
-        trades = loader.next()
-        if trades is None:
+        tick_trades = loader.next()
+        if tick_trades is None:
             break
-        for trade in trades:
-            assert trade.time == cur_epoch
-            assert trade.time == target[idx][0]
-            assert trade.price == target[idx][1]
-            assert trade.quantity == target[idx][2]
-            idx += 1
+
+        assert len(tick_trades) == len(all_trades[all_trades_idx])
+        for i in range(len(tick_trades)):
+            assert tick_trades[i].time == cur_epoch
+            assert tick_trades[i].time == targets[target_idx][0]
+            assert tick_trades[i].price == targets[target_idx][1]
+            assert tick_trades[i].quantity == targets[target_idx][2]
+
+            assert tick_trades[i].time == all_trades[all_trades_idx][i].time
+            assert tick_trades[i].price == all_trades[all_trades_idx][i].price
+            assert tick_trades[i].quantity == all_trades[all_trades_idx][i].quantity
+            target_idx += 1
+
+        all_trades_idx += 1
         cur_epoch += 1
         count += 1
-    assert count == 60 * 60 * 24 * 6
+
+    assert count == 60 * 60 * 24 * 4
+    assert len(all_trades) == 60 * 60 * 24 * 4

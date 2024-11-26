@@ -41,7 +41,34 @@ class TickSnapshotsDataLoader(BaseDataLoader):
         return int(dt.replace(tzinfo=timezone.utc).timestamp())
 
     def get_data(self, since: date, until: date) -> list[SnapshotMessage]:
-        return self._raw_loader.get_data(since, until)
+        raw_data = self._raw_loader.get_data(since, until)
+        res = []
+        start_timestamp = self._date_to_timestamp(since)
+        end_timestamp = self._date_to_timestamp(until)
+        cur_snapshot = SnapshotMessage(
+            time=self._cur_timestamp,
+            feedcode=self._raw_loader._feedcode,
+            bids=[],
+            asks=[],
+            market=self._raw_loader._market,
+        )
+        idx = 0
+        for timestamp in range(start_timestamp, end_timestamp):
+            if idx == len(raw_data):
+                res.append(cur_snapshot)
+                continue
+            if raw_data[idx].time < timestamp:
+                raise ValueError(
+                    "Unexpected invariance breach: trade time should be monotonically increasing"
+                )
+            elif raw_data[idx].time > timestamp:
+                res.append(cur_snapshot)
+            else:
+                while (idx < len(raw_data)) and (timestamp == raw_data[idx].time):
+                    cur_snapshot = raw_data[idx]
+                    idx += 1
+                res.append(cur_snapshot)
+        return res
 
     def next(self) -> Optional[SnapshotMessage]:
         if self._cur_timestamp >= self._end_timestamp:
