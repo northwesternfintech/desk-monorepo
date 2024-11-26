@@ -5,8 +5,8 @@ from typing import Optional
 from pysrc.adapters.messages import SnapshotMessage
 from pysrc.data_loaders.base_data_loader import BaseDataLoader
 from pysrc.data_loaders.raw_snapshots_data_loader import RawSnapshotsDataLoader
-from pysrc.util.types import Asset, Market
 from pysrc.util.exceptions import DIE
+from pysrc.util.types import Asset, Market
 
 
 class TickSnapshotsDataLoader(BaseDataLoader):
@@ -59,7 +59,9 @@ class TickSnapshotsDataLoader(BaseDataLoader):
                 res.append(cur_snapshot)
                 continue
             if raw_data[idx].time < timestamp:
-                DIE("Unexpected invariance breach: snapshot time should be monotonically increasing")
+                DIE(
+                    "Unexpected invariance breach: snapshot time should be monotonically increasing"
+                )
             elif raw_data[idx].time > timestamp:
                 res.append(cur_snapshot)
             else:
@@ -75,7 +77,9 @@ class TickSnapshotsDataLoader(BaseDataLoader):
 
         if self._next_shapsnot is not None:
             if self._next_shapsnot.time < self._cur_timestamp:
-                DIE("Unexpected invariance breach: trade time should be monotonically increasing")
+                DIE(
+                    "Unexpected invariance breach: trade time should be monotonically increasing"
+                )
             elif self._next_shapsnot.time > self._cur_timestamp:
                 self._cur_timestamp += 1
                 return self._cur_snapshot
@@ -88,7 +92,9 @@ class TickSnapshotsDataLoader(BaseDataLoader):
             if new_snapshot is None:
                 break
             if new_snapshot.time < self._cur_timestamp:
-                DIE("Unexpected invariance breach: trade time should be monotonically increasing")
+                DIE(
+                    "Unexpected invariance breach: trade time should be monotonically increasing"
+                )
             elif new_snapshot.time == self._cur_timestamp:
                 self._cur_snapshot = new_snapshot
             else:

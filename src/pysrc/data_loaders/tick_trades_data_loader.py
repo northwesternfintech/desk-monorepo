@@ -5,8 +5,8 @@ from typing import Optional
 from pysrc.adapters.messages import TradeMessage
 from pysrc.data_loaders.base_data_loader import BaseDataLoader
 from pysrc.data_loaders.raw_trades_data_loader import RawTradesDataLoader
-from pysrc.util.types import Asset, Market
 from pysrc.util.exceptions import DIE
+from pysrc.util.types import Asset, Market
 
 
 class TickTradesDataLoader(BaseDataLoader):
@@ -46,7 +46,9 @@ class TickTradesDataLoader(BaseDataLoader):
                 res.append([])
                 continue
             if raw_data[idx].time < timestamp:
-                DIE("Unexpected invariance breach: trade time should be monotonically increasing")
+                DIE(
+                    "Unexpected invariance breach: trade time should be monotonically increasing"
+                )
             elif raw_data[idx].time > timestamp:
                 res.append([])
             else:
@@ -63,7 +65,9 @@ class TickTradesDataLoader(BaseDataLoader):
 
         if self._next_trade is not None:
             if self._next_trade.time < self._cur_timestamp:
-                DIE("Unexpected invariance breach: trade time should be monotonically increasing")
+                DIE(
+                    "Unexpected invariance breach: trade time should be monotonically increasing"
+                )
             elif self._next_trade.time > self._cur_timestamp:
                 self._cur_timestamp += 1
                 return []
@@ -76,7 +80,9 @@ class TickTradesDataLoader(BaseDataLoader):
             if new_trade is None:
                 break
             if new_trade.time < self._cur_timestamp:
-                DIE("Unexpected invariance breach: trade time should be monotonically increasing")
+                DIE(
+                    "Unexpected invariance breach: trade time should be monotonically increasing"
+                )
             elif new_trade.time == self._cur_timestamp:
                 self._cur_trades.append(new_trade)
             else:

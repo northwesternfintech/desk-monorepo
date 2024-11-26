@@ -6,8 +6,8 @@ from pysrc.adapters.kraken.asset_mappings import asset_to_kraken
 from pysrc.adapters.messages import TradeMessage
 from pysrc.data_handlers.kraken.historical.trades_data_handler import TradesDataHandler
 from pysrc.data_loaders.base_data_loader import BaseDataLoader
-from pysrc.util.types import Asset, Market
 from pysrc.util.exceptions import DIE
+from pysrc.util.types import Asset, Market
 
 
 class RawTradesDataLoader(BaseDataLoader):
@@ -23,7 +23,9 @@ class RawTradesDataLoader(BaseDataLoader):
         self._resource_path = resource_path
         self._asset_resource_path = resource_path / "trades" / self._feedcode
         if not self._asset_resource_path.exists():
-            DIE(f"Directory for asset trades data '{self._asset_resource_path}' doesn't exist")
+            DIE(
+                f"Directory for asset trades data '{self._asset_resource_path}' doesn't exist"
+            )
 
         self._asset = asset
         self._market = market
@@ -32,7 +34,9 @@ class RawTradesDataLoader(BaseDataLoader):
         self._since = since
         self._until = until
         if self._since >= self._until:
-            DIE(f"Dates since ({self._since.strftime("%m_%d_%Y")}) equal to or later than until ({self._until.strftime("%m_%d_%Y")})")
+            DIE(
+                f"Dates since ({self._since.strftime("%m_%d_%Y")}) equal to or later than until ({self._until.strftime("%m_%d_%Y")})"
+            )
         self._cur_date = since
         self._cur_path = self._asset_resource_path / self._cur_date.strftime(
             "%m_%d_%Y.bin"
@@ -43,7 +47,9 @@ class RawTradesDataLoader(BaseDataLoader):
 
     def get_data(self, since: date, until: date) -> list[TradeMessage]:
         if since >= until:
-            DIE(f"Dates since ({since.strftime("%m_%d_%Y")}) equal to or later than until ({until.strftime("%m_%d_%Y")})")
+            DIE(
+                f"Dates since ({since.strftime("%m_%d_%Y")}) equal to or later than until ({until.strftime("%m_%d_%Y")})"
+            )
         file_paths = []
         trades = []
 
