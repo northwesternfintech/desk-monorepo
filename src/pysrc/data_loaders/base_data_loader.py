@@ -13,7 +13,7 @@ class BaseDataLoader(ABC):
         resource_path: Path,
         asset: Asset,
         since: date,
-        until: Optional[date] = None,
+        until: date,
     ) -> None:
         raise NotImplementedError
 
