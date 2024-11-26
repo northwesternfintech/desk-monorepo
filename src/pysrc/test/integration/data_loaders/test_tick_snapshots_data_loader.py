@@ -15,7 +15,7 @@ resource_path = Path(__file__).parent / "resources"
 
 
 def test_initialization_error() -> None:
-    with pytest.raises(ValueError) as msg:
+    with pytest.raises(AssertionError) as msg:
         TickSnapshotsDataLoader(
             resource_path=resource_path,
             asset=Asset.ADA,
@@ -28,7 +28,7 @@ def test_initialization_error() -> None:
         == "Dates since (07_01_2024) equal to or later than until (06_01_2024)"
     )
 
-    with pytest.raises(ValueError) as msg:
+    with pytest.raises(AssertionError) as msg:
         TickSnapshotsDataLoader(
             resource_path=resource_path / "lol",
             asset=Asset.ADA,
@@ -40,7 +40,7 @@ def test_initialization_error() -> None:
         msg.value
     ) and "doesn't exist" in str(msg.value)
 
-    with pytest.raises(ValueError) as msg:
+    with pytest.raises(AssertionError) as msg:
         TickSnapshotsDataLoader(
             resource_path=resource_path,
             asset=Asset.ADA,
@@ -60,14 +60,14 @@ def test_get_data_error() -> None:
         until=date(year=2024, month=7, day=1),
     )
 
-    with pytest.raises(ValueError) as msg:
+    with pytest.raises(AssertionError) as msg:
         loader.get_data(
             since=date(year=2024, month=6, day=1),
             until=date(year=2024, month=7, day=1),
         )
     assert "Expected file" in str(msg.value) and "doesn't exist" in str(msg.value)
 
-    with pytest.raises(ValueError) as msg:
+    with pytest.raises(AssertionError) as msg:
         loader.get_data(
             since=date(year=2024, month=6, day=25),
             until=date(year=2024, month=7, day=2),
