@@ -3,7 +3,7 @@ import logging
 import time
 from typing import Any, Optional, override
 
-from sortedcontainers import SortedDict  # type: ignore
+from sortedcontainers import SortedDict
 
 from pysrc.adapters.kraken.asset_mappings import (
     asset_to_kraken,
@@ -29,6 +29,10 @@ class KrakenFutureWebsocketClient(WebSocketClient):
         super().__init__(self.BASE_URL, retry_delay, max_retries)
         self.subscribed_assets: list[Asset] = subscribed_assets
         self.trade_messages: list[TradeMessage] = []
+        self.subscription_confirmations: dict[str, bool] = {}
+        self._initialize_book_params()
+
+    def _initialize_book_params(self) -> None:
         self.snapshot_messages: dict[Asset, SnapshotMessage] = {
             asset: SnapshotMessage(
                 -1,
@@ -37,15 +41,14 @@ class KrakenFutureWebsocketClient(WebSocketClient):
                 [],
                 Market.KRAKEN_USD_FUTURE,
             )
-            for asset in subscribed_assets
+            for asset in self.subscribed_assets
         }
-        self.subscription_confirmations: dict[str, bool] = {}
-        
+
         self.bids: dict[Asset, SortedDict[float, float]] = {
-            asset: SortedDict(lambda price: -price) for asset in self.subscribed_assets
+            asset: SortedDict[float, float]() for asset in self.subscribed_assets
         }
         self.asks: dict[Asset, SortedDict[float, float]] = {
-            asset: SortedDict() for asset in self.subscribed_assets
+            asset: SortedDict[float, float]() for asset in self.subscribed_assets
         }
 
     @override
@@ -214,7 +217,8 @@ class KrakenFutureWebsocketClient(WebSocketClient):
         for asset in self.subscribed_assets:
             self.snapshot_messages[asset].time = int(time.time())
             self.snapshot_messages[asset].bids = [
-                (price, quantity) for price, quantity in self.bids[asset].items()
+                (price, quantity)
+                for price, quantity in reversed(self.bids[asset].items())
             ]
             self.snapshot_messages[asset].asks = [
                 (price, quantity) for price, quantity in self.asks[asset].items()

@@ -629,6 +629,21 @@ files = [
 ]
 
 [[package]]
+name = "sortedcontainers-stubs"
+version = "2.4.2"
+description = "Type stubs for sortedcontainers"
+optional = false
+python-versions = ">=3.8,<4.0"
+files = [
+    {file = "sortedcontainers_stubs-2.4.2-py3-none-any.whl", hash = "sha256:6cdbcf9c71198729dd6c0a8a7dc9742768f25b49384b91965d716a9d16ca7b2a"},
+    {file = "sortedcontainers_stubs-2.4.2.tar.gz", hash = "sha256:c24e33877effa5a3eb85357112496ba33a0b681c05e0d5d3745664fd3be75d82"},
+]
+
+[package.dependencies]
+sortedcontainers = ">=2,<3"
+typing-extensions = ">=4.1.0,<5.0.0"
+
+[[package]]
 name = "threadpoolctl"
 version = "3.5.0"
 description = "threadpoolctl"
@@ -762,4 +777,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "74a8a379f3ca29bc6d2d149b9a826bc72d734b07b3e697426af1fe7f2e756a01"
+content-hash = "7daec8cd51e0fbb756a862c782662cbdafa90a18b48056ff30796dbdf5b59b79"
