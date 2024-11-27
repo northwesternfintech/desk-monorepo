@@ -69,7 +69,7 @@ class KrakenFutureWebsocketClient(WebSocketClient):
         if self.ws is None:
             DIE("WebSocket must be initialized before sending messages.")
         await self.ws.send(json.dumps(subscription_message))
-        _logger.warning(f"Sent trade subscription message: {subscription_message}")
+        _logger.info(f"Sent trade subscription message: {subscription_message}")
 
     async def _subscribe_book(self) -> None:
         kraken_asset_ids = [
@@ -84,7 +84,7 @@ class KrakenFutureWebsocketClient(WebSocketClient):
         if self.ws is None:
             DIE("WebSocket must be initialized before sending messages.")
         await self.ws.send(json.dumps(subscription_message))
-        _logger.warning(f"Sent book subscription message: {subscription_message}")
+        _logger.info(f"Sent book subscription message: {subscription_message}")
 
     @override
     async def on_disconnect(self) -> None:
@@ -102,9 +102,7 @@ class KrakenFutureWebsocketClient(WebSocketClient):
                     "Received invalid combination of subscription message with no subscription feed type"
                 )
             self.subscription_confirmations[feed_type] = True
-            _logger.warning(
-                f"Subscribed to {feed_type} feed for products: {product_ids}"
-            )
+            _logger.info(f"Subscribed to {feed_type} feed for products: {product_ids}")
             return
 
         match feed_type:
@@ -116,7 +114,7 @@ class KrakenFutureWebsocketClient(WebSocketClient):
                 for trade_data in message.get("trades", []):
                     trade_message = self._parse_trade_message(trade_data)
                     self.trade_messages.append(trade_message)
-                _logger.warning(
+                _logger.debug(
                     f"Appended {len(message.get('trades', []))} trade messages."
                 )
 
@@ -158,13 +156,13 @@ class KrakenFutureWebsocketClient(WebSocketClient):
         self, asset: Asset, price: float, qty: float, side: Optional[str]
     ) -> None:
         if side == "buy":
-            if qty != 0.0 and price in self.bids[asset]:
+            if qty == 0.0 and price in self.bids[asset]:
                 del self.bids[asset][price]
             else:
                 self.bids[asset][price] = qty
 
         elif side == "sell":
-            if qty != 0.0 and price in self.asks[asset]:
+            if qty == 0.0 and price in self.asks[asset]:
                 del self.asks[asset][price]
             else:
                 self.asks[asset][price] = qty
