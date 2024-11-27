@@ -53,10 +53,10 @@ class KrakenFutureWebsocketClient(WebSocketClient):
 
     @override
     async def on_connect(self) -> None:
-        await self.subscribe_trades()
-        await self.subscribe_book()
+        await self._subscribe_trades()
+        await self._subscribe_book()
 
-    async def subscribe_trades(self) -> None:
+    async def _subscribe_trades(self) -> None:
         kraken_asset_ids = [
             asset_to_kraken(asset, Market.KRAKEN_USD_FUTURE)
             for asset in self.subscribed_assets
@@ -72,7 +72,7 @@ class KrakenFutureWebsocketClient(WebSocketClient):
         await self.ws.send(json.dumps(subscription_message))
         _logger.warning(f"Sent trade subscription message: {subscription_message}")
 
-    async def subscribe_book(self) -> None:
+    async def _subscribe_book(self) -> None:
         kraken_asset_ids = [
             asset_to_kraken(asset, Market.KRAKEN_USD_FUTURE)
             for asset in self.subscribed_assets
