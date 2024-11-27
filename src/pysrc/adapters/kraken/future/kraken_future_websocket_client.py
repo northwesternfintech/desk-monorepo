@@ -40,6 +40,7 @@ class KrakenFutureWebsocketClient(WebSocketClient):
             for asset in subscribed_assets
         }
         self.subscription_confirmations: dict[str, bool] = {}
+        
         self.bids: dict[Asset, SortedDict[float, float]] = {
             asset: SortedDict(lambda price: -price) for asset in self.subscribed_assets
         }
@@ -49,22 +50,40 @@ class KrakenFutureWebsocketClient(WebSocketClient):
 
     @override
     async def on_connect(self) -> None:
+        await self.subscribe_trades()
+        await self.subscribe_book()
+
+    async def subscribe_trades(self) -> None:
         kraken_asset_ids = [
             asset_to_kraken(asset, Market.KRAKEN_USD_FUTURE)
             for asset in self.subscribed_assets
         ]
-        subscription_messages = [
-            {"event": "subscribe", "feed": "trade", "product_ids": kraken_asset_ids},
-            {"event": "subscribe", "feed": "book", "product_ids": kraken_asset_ids},
-        ]
-        # bc prod_assert doesn't check None
+        subscription_message = {
+            "event": "subscribe",
+            "feed": "trade",
+            "product_ids": kraken_asset_ids,
+        }
         assert (
             self.ws is not None
         ), "WebSocket must be initialized before sending messages."
+        await self.ws.send(json.dumps(subscription_message))
+        _logger.warning(f"Sent trade subscription message: {subscription_message}")
 
-        for message in subscription_messages:
-            await self.ws.send(json.dumps(message))
-            _logger.warning(f"Sent subscription message: {message}")
+    async def subscribe_book(self) -> None:
+        kraken_asset_ids = [
+            asset_to_kraken(asset, Market.KRAKEN_USD_FUTURE)
+            for asset in self.subscribed_assets
+        ]
+        subscription_message = {
+            "event": "subscribe",
+            "feed": "book",
+            "product_ids": kraken_asset_ids,
+        }
+        assert (
+            self.ws is not None
+        ), "WebSocket must be initialized before sending messages."
+        await self.ws.send(json.dumps(subscription_message))
+        _logger.warning(f"Sent book subscription message: {subscription_message}")
 
     @override
     async def on_disconnect(self) -> None:
@@ -129,20 +148,27 @@ class KrakenFutureWebsocketClient(WebSocketClient):
                 qty = float(message["qty"])
                 asset = kraken_to_asset(feedcode)
 
-                if message.get("side") == "buy":
-                    if qty != 0.0 and price in self.bids[asset]:
-                        del self.bids[asset][price]
-                    else:
-                        self.bids[asset][price] = qty
-
-                if message.get("side") == "sell":
-                    if qty != 0.0 and price in self.asks[asset]:
-                        del self.asks[asset][price]
-                    else:
-                        self.asks[asset][price] = qty
+                self.update_order_book(asset, price, qty, message.get("side"))
 
             case _:
                 _logger.warning(f"Received unknown message feed type: {feed_type}")
+
+    def update_order_book(
+        self, asset: Asset, price: float, qty: float, side: Optional[str]
+    ) -> None:
+        if side == "buy":
+            if qty != 0.0 and price in self.bids[asset]:
+                del self.bids[asset][price]
+            else:
+                self.bids[asset][price] = qty
+
+        elif side == "sell":
+            if qty != 0.0 and price in self.asks[asset]:
+                del self.asks[asset][price]
+            else:
+                self.asks[asset][price] = qty
+        else:
+            _logger.warning(f"Unknown side '{side}' in order book update for {asset}")
 
     def _parse_trade_message(self, trade_data: dict[str, Any]) -> TradeMessage:
         prod_assert(
