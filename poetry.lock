@@ -618,6 +618,32 @@ files = [
 optional = ["SQLAlchemy (>=1.4,<3)", "aiodns (>1.0)", "aiohttp (>=3.7.3,<4)", "boto3 (<=2)", "websocket-client (>=1,<2)", "websockets (>=9.1,<14)"]
 
 [[package]]
+name = "sortedcontainers"
+version = "2.4.0"
+description = "Sorted Containers -- Sorted List, Sorted Dict, Sorted Set"
+optional = false
+python-versions = "*"
+files = [
+    {file = "sortedcontainers-2.4.0-py2.py3-none-any.whl", hash = "sha256:a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0"},
+    {file = "sortedcontainers-2.4.0.tar.gz", hash = "sha256:25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88"},
+]
+
+[[package]]
+name = "sortedcontainers-stubs"
+version = "2.4.2"
+description = "Type stubs for sortedcontainers"
+optional = false
+python-versions = ">=3.8,<4.0"
+files = [
+    {file = "sortedcontainers_stubs-2.4.2-py3-none-any.whl", hash = "sha256:6cdbcf9c71198729dd6c0a8a7dc9742768f25b49384b91965d716a9d16ca7b2a"},
+    {file = "sortedcontainers_stubs-2.4.2.tar.gz", hash = "sha256:c24e33877effa5a3eb85357112496ba33a0b681c05e0d5d3745664fd3be75d82"},
+]
+
+[package.dependencies]
+sortedcontainers = ">=2,<3"
+typing-extensions = ">=4.1.0,<5.0.0"
+
+[[package]]
 name = "threadpoolctl"
 version = "3.5.0"
 description = "threadpoolctl"
@@ -751,4 +777,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "003129e6b3111f6e4b8266f5bc1e1eb1e979d0bc8343d738104337e948ad97a9"
+content-hash = "7daec8cd51e0fbb756a862c782662cbdafa90a18b48056ff30796dbdf5b59b79"
