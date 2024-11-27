@@ -151,12 +151,12 @@ class KrakenFutureWebsocketClient(WebSocketClient):
                 qty = float(message["qty"])
                 asset = kraken_to_asset(feedcode)
 
-                self.update_order_book(asset, price, qty, message.get("side"))
+                self._update_order_book(asset, price, qty, message.get("side"))
 
             case _:
                 _logger.warning(f"Received unknown message feed type: {feed_type}")
 
-    def update_order_book(
+    def _update_order_book(
         self, asset: Asset, price: float, qty: float, side: Optional[str]
     ) -> None:
         if side == "buy":
