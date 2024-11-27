@@ -10,7 +10,7 @@ from pysrc.adapters.kraken.asset_mappings import (
     kraken_to_asset,
 )
 from pysrc.adapters.messages import SnapshotMessage, TradeMessage
-from pysrc.util.exceptions import prod_assert
+from pysrc.util.exceptions import DIE, prod_assert
 from pysrc.util.types import Asset, Market, OrderSide
 from pysrc.util.websocket import WebSocketClient
 
@@ -66,9 +66,8 @@ class KrakenFutureWebsocketClient(WebSocketClient):
             "feed": "trade",
             "product_ids": kraken_asset_ids,
         }
-        assert (
-            self.ws is not None
-        ), "WebSocket must be initialized before sending messages."
+        if self.ws is None:
+            DIE("WebSocket must be initialized before sending messages.")
         await self.ws.send(json.dumps(subscription_message))
         _logger.warning(f"Sent trade subscription message: {subscription_message}")
 
@@ -82,9 +81,8 @@ class KrakenFutureWebsocketClient(WebSocketClient):
             "feed": "book",
             "product_ids": kraken_asset_ids,
         }
-        assert (
-            self.ws is not None
-        ), "WebSocket must be initialized before sending messages."
+        if self.ws is None:
+            DIE("WebSocket must be initialized before sending messages.")
         await self.ws.send(json.dumps(subscription_message))
         _logger.warning(f"Sent book subscription message: {subscription_message}")
 
@@ -94,15 +92,15 @@ class KrakenFutureWebsocketClient(WebSocketClient):
 
     @override
     async def on_message(self, message: dict[str, Any]) -> None:
-        prod_assert(
-            "event" in message, f"Received message with no event key: {message}"
-        )
-        prod_assert("feed" in message, f"Received message with no feed key: {message}")
-        event = message["event"]
-        feed_type = message["feed"]
+        event = message.get("event")
+        feed_type = message.get("feed")
 
         if event == "subscribed":
             product_ids = message.get("product_ids", [])
+            if feed_type is None:
+                DIE(
+                    "Received invalid combination of subscription message with no subscription feed type"
+                )
             self.subscription_confirmations[feed_type] = True
             _logger.warning(
                 f"Subscribed to {feed_type} feed for products: {product_ids}"
