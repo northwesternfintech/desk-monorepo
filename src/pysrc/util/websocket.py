@@ -40,12 +40,16 @@ class WebSocketClient(ABC):
 
                 await self._listen_for_messages()
                 return
-            except asyncio.TimeoutError:
+            except asyncio.TimeoutError as e:
                 _logger.warning("Connection attempt timed out.")
+                raise RuntimeError("WebSocket connection timed out.") from e
+
             except websockets.ConnectionClosed as e:
                 _logger.warning(f"WebSocket connection closed: {e}")
+
             except Exception as e:
                 _logger.warning(f"Unexpected error: {e}")
+
             finally:
                 await self.on_disconnect()
 
@@ -71,8 +75,12 @@ class WebSocketClient(ABC):
                     await asyncio.sleep(0.1)
         except websockets.ConnectionClosed as e:
             _logger.warning(f"WebSocket connection closed during listening: {e}")
+            raise RuntimeError("WebSocket connection was unexpectedly closed.") from e
         except Exception as e:
             _logger.warning(f"Unexpected error while listening: {e}")
+            raise RuntimeError(
+                "An unexpected error occurred while handling the WebSocket."
+            ) from e
 
     @abstractmethod
     async def on_connect(self) -> None:
