@@ -9,7 +9,7 @@ from pysrc.util.exceptions import DIE
 from pysrc.util.historical_data_utils import check_historical_data_filepath
 
 
-class LargeSnapshotDataWriter:
+class SnapshotStreamWriter:
     def __init__(self) -> None:
         self._zstd_options = {CParameter.compressionLevel: 10}
         self._file: Optional[BufferedWriter] = None

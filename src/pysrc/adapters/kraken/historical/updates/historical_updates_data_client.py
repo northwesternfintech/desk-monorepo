@@ -21,8 +21,8 @@ from pysrc.adapters.kraken.historical.updates.utils import (
     str_to_order_side,
 )
 from pysrc.adapters.messages import SnapshotMessage
-from pysrc.data_handlers.kraken.historical.large_snapshot_data_writer import (
-    LargeSnapshotDataWriter,
+from pysrc.data_handlers.kraken.historical.snapshot_stream_writer import (
+    SnapshotStreamWriter,
 )
 from pysrc.util.exceptions import DIE
 from pysrc.util.types import Asset, Market, OrderSide
@@ -40,7 +40,7 @@ class HistoricalUpdatesDataClient:
         self._last_saved_sec = -1
         self._cur_sec = -1
 
-        self._snapshot_handler = LargeSnapshotDataWriter()
+        self._snapshot_handler = SnapshotStreamWriter()
 
     def _request(self, route: str, params: dict[str, Any]) -> Any:
         res = self._session.get(route, params=params)
