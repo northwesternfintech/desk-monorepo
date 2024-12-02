@@ -21,8 +21,8 @@ from pysrc.adapters.kraken.historical.updates.utils import (
     str_to_order_side,
 )
 from pysrc.adapters.messages import SnapshotMessage
-from pysrc.data_handlers.kraken.historical.snapshots_data_handler import (
-    SnapshotsDataHandler,
+from pysrc.data_handlers.kraken.historical.large_snapshot_data_writer import (
+    LargeSnapshotDataWriter,
 )
 from pysrc.util.exceptions import DIE
 from pysrc.util.types import Asset, Market, OrderSide
@@ -40,7 +40,7 @@ class HistoricalUpdatesDataClient:
         self._last_saved_sec = -1
         self._cur_sec = -1
 
-        self._snapshot_handler = SnapshotsDataHandler()
+        self._snapshot_handler = LargeSnapshotDataWriter()
 
     def _request(self, route: str, params: dict[str, Any]) -> Any:
         res = self._session.get(route, params=params)
@@ -290,14 +290,15 @@ class HistoricalUpdatesDataClient:
         for thread in threads:
             thread.start()
 
-        snapshots = []
+        file_path = snapshot_path / f"{day.strftime('%m_%d_%Y')}.bin"
+        self._snapshot_handler.open(file_path)
+
         snapshot = self._compute_next_snapshot()
         while snapshot:
-            snapshots.append(snapshot)
+            self._snapshot_handler.write(snapshot)
             snapshot = self._compute_next_snapshot()
 
-        file_path = snapshot_path / f"{day.strftime('%m_%d_%Y')}.bin"
-        self._snapshot_handler.write(file_path, snapshots)
+        self._snapshot_handler.flush()
 
         for thread in threads:
             thread.join()
